@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, Search, Sprout } from "lucide-react";
+import { Search, Sprout, UserRound } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function TopBar() {
@@ -21,12 +21,12 @@ export default function TopBar() {
           <Search className="h-4 w-4" />
         </motion.button>
         <motion.button
-          aria-label="Notifications"
+          aria-label="Profile"
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.96 }}
           className="grid h-10 w-10 place-items-center rounded-full bg-panel-soft/70 text-mint ring-1 ring-line/70 transition hover:bg-leaf/15"
         >
-          <Bell className="h-4 w-4" />
+          <UserRound className="h-4 w-4" />
         </motion.button>
       </div>
     </header>

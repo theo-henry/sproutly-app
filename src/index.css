@@ -33,8 +33,6 @@ body {
     color 900ms cubic-bezier(0.7, 0, 0.2, 1);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  /* Lock page scroll: the landing slider manages its own paging. */
-  overscroll-behavior: none;
 }
 
 html,

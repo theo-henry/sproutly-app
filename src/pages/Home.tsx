@@ -7,9 +7,9 @@ export default function Home() {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-sm text-forest/60">Good morning,</p>
-        <h1 className="font-display text-3xl font-extrabold text-forest">
-          Let’s eat plants today.
+        <p className="text-sm font-medium text-charcoal/60">Good morning,</p>
+        <h1 className="text-3xl font-black leading-tight text-ink">
+          Let's eat plants today.
         </h1>
       </div>
 
@@ -20,7 +20,7 @@ export default function Home() {
           subtitle="Tofu scramble · Buddha bowl · Lentil curry"
         />
         <PlaceholderCard
-          tone="clay"
+          tone="cyan"
           title="Reminder"
           subtitle="Drink 2L of water"
         />
@@ -29,9 +29,9 @@ export default function Home() {
       <section>
         <SectionHeader title="Quick actions" />
         <div className="grid grid-cols-3 gap-3">
-          <PlaceholderCard title="Log meal" />
-          <PlaceholderCard title="Scan label" />
-          <PlaceholderCard title="Find spot" />
+          <PlaceholderCard title="Log meal" tone="sage" />
+          <PlaceholderCard title="Scan label" tone="cyan" />
+          <PlaceholderCard title="Find spot" tone="violet" />
         </div>
       </section>
 
@@ -46,7 +46,7 @@ export default function Home() {
           <PlaceholderCard
             title="Creamy cashew pasta"
             subtitle="20 min · 520 kcal · 18g protein"
-            tone="sage"
+            tone="cyan"
           />
         </div>
       </section>

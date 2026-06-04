@@ -7,17 +7,17 @@ export default function MealPlan() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="font-display text-3xl font-extrabold text-forest">
+        <h1 className="text-3xl font-black text-ink">
           Meal plan
         </h1>
-        <p className="text-sm text-forest/60">
+        <p className="text-sm font-medium text-charcoal/60">
           Generate a week, swap meals, build a shopping list.
         </p>
       </div>
 
-      <button className="w-full rounded-2xl bg-leaf px-5 py-4 text-left text-cream">
-        <div className="font-display text-lg font-bold">✨ Generate week</div>
-        <div className="text-xs opacity-80">
+      <button className="w-full rounded-lg bg-ink px-5 py-4 text-left text-white shadow-[0_20px_70px_-50px_black] transition hover:bg-violet">
+        <div className="text-lg font-black">Generate week</div>
+        <div className="text-xs text-white/70">
           Tailored to your goals, budget, and pantry
         </div>
       </button>
@@ -28,7 +28,7 @@ export default function MealPlan() {
             key={d}
             title={d}
             subtitle="Breakfast · Lunch · Dinner"
-            tone="sage"
+            tone="violet"
           />
         ))}
       </div>

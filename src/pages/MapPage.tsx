@@ -6,15 +6,20 @@ import PlaceholderCard from "../components/ui/PlaceholderCard";
 export default function MapPage() {
   return (
     <div className="space-y-4">
-      <h1 className="font-display text-3xl font-extrabold text-forest">
-        Nearby
-      </h1>
+      <div>
+        <p className="text-sm font-medium text-charcoal/60">Restaurants and supermarkets</p>
+        <h1 className="text-3xl font-black text-ink">Nearby</h1>
+      </div>
 
-      <div className="relative h-72 overflow-hidden rounded-3xl bg-sage/40 ring-1 ring-black/5">
-        <div className="absolute inset-0 grid place-items-center text-center text-forest/70">
+      <div className="dark-grid relative h-72 overflow-hidden rounded-lg bg-ink ring-1 ring-ink/10">
+        <div className="absolute left-10 top-8 h-24 w-px bg-cyan/80" />
+        <div className="absolute right-12 top-16 h-3 w-3 rounded-full bg-leaf shadow-[0_0_30px_oklch(0.68_0.18_150/0.8)]" />
+        <div className="absolute bottom-14 left-16 h-3 w-3 rounded-full bg-cyan shadow-[0_0_30px_oklch(0.72_0.14_205/0.8)]" />
+        <div className="absolute bottom-20 right-24 h-3 w-3 rounded-full bg-violet shadow-[0_0_30px_oklch(0.62_0.19_295/0.8)]" />
+        <div className="absolute inset-0 grid place-items-center text-center text-white/78">
           <div>
-            <div className="font-display text-lg font-bold">Map goes here</div>
-            <div className="text-xs">
+            <div className="text-lg font-black">Map goes here</div>
+            <div className="text-xs text-white/55">
               Drop in Leaflet / Mapbox / Google Maps
             </div>
           </div>
@@ -28,7 +33,7 @@ export default function MapPage() {
           subtitle="100% plant-based · 0.4 km"
         />
         <PlaceholderCard
-          tone="clay"
+          tone="cyan"
           title="BioMarket Centre"
           subtitle="Supermarket · 0.8 km"
         />

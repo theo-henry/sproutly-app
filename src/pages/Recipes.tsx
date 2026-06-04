@@ -7,12 +7,13 @@ export default function Recipes() {
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
-        <h1 className="font-display text-3xl font-extrabold text-forest">
-          Recipes
-        </h1>
+        <div>
+          <p className="text-sm font-medium text-charcoal/60">Cook and plan</p>
+          <h1 className="text-3xl font-black text-ink">Recipes</h1>
+        </div>
         <Link
           to="/meal-plan"
-          className="rounded-full bg-leaf px-4 py-2 text-xs font-semibold text-cream"
+          className="rounded-full bg-ink px-4 py-2 text-xs font-bold text-white transition hover:bg-leaf hover:text-ink"
         >
           AI meal plan
         </Link>
@@ -24,7 +25,7 @@ export default function Recipes() {
           <PlaceholderCard
             title="15-min peanut noodles"
             subtitle="One pan · 12g protein"
-            tone="clay"
+            tone="violet"
           />
           <PlaceholderCard
             title="Lemon herb tofu wrap"
@@ -34,7 +35,7 @@ export default function Recipes() {
           <PlaceholderCard
             title="Chickpea shakshuka"
             subtitle="20 min · iron-rich"
-            tone="sage"
+            tone="cyan"
           />
         </div>
       </section>
@@ -42,8 +43,8 @@ export default function Recipes() {
       <section>
         <SectionHeader title="Seasonal picks" />
         <div className="grid grid-cols-2 gap-3">
-          <PlaceholderCard title="Roasted squash" />
-          <PlaceholderCard title="Citrus salad" />
+          <PlaceholderCard title="Roasted squash" tone="leaf" />
+          <PlaceholderCard title="Citrus salad" tone="cyan" />
         </div>
       </section>
     </div>

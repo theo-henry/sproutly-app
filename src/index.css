@@ -1,0 +1,52 @@
+/* Tailwind v4 — single import gives us the utility layer. */
+@import "tailwindcss";
+
+/*
+ * Sproutly design tokens.
+ * Plant-based palette: deep forest greens, warm cream, terracotta accent.
+ * Tokens are exposed as Tailwind v4 @theme variables so utilities like
+ * `bg-sage`, `text-forest`, `bg-cream` just work.
+ */
+@theme {
+  --color-forest: oklch(0.32 0.06 150);
+  --color-sage: oklch(0.78 0.08 145);
+  --color-leaf: oklch(0.65 0.16 145);
+  --color-cream: oklch(0.96 0.03 95);
+  --color-clay: oklch(0.68 0.13 45);
+  --color-charcoal: oklch(0.22 0.02 150);
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Body background animates between flavor colors. We tween it via CSS
+ * (not Framer Motion) because <body> sits OUTSIDE the React tree, so
+ * mutating its style + a CSS transition is the simplest path.
+ */
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-forest);
+  background-color: var(--color-cream);
+  transition: background-color 900ms cubic-bezier(0.7, 0, 0.2, 1),
+    color 900ms cubic-bezier(0.7, 0, 0.2, 1);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Lock page scroll: the landing slider manages its own paging. */
+  overscroll-behavior: none;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Utility: hide scrollbars on horizontal scrollers (chip rows, etc.). */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}

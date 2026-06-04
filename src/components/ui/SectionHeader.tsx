@@ -14,7 +14,7 @@ export default function SectionHeader({ title, href, action = "See all" }: Props
       {href ? (
         <Link
           to={href}
-          className="text-xs font-bold uppercase tracking-[0.16em] text-leaf"
+          className="text-xs font-black uppercase tracking-[0.16em] text-leaf transition hover:text-mint"
         >
           {action}
         </Link>

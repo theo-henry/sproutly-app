@@ -3,35 +3,33 @@
 
 /*
  * Sproutly design tokens.
- * Futuristic plant-based palette: white surfaces, dark ink, electric greens,
- * cyan data accents, and restrained violet for AI moments.
+ * Restrained dark-green palette for the web app frame.
  */
 @theme {
-  --color-ink: oklch(0.15 0.02 165);
-  --color-charcoal: oklch(0.22 0.02 165);
-  --color-paper: oklch(0.99 0.004 165);
-  --color-mist: oklch(0.96 0.012 170);
-  --color-line: oklch(0.88 0.018 170);
-  --color-forest: oklch(0.24 0.05 155);
-  --color-sage: oklch(0.88 0.04 155);
-  --color-leaf: oklch(0.68 0.18 150);
-  --color-cyan: oklch(0.72 0.14 205);
-  --color-violet: oklch(0.62 0.19 295);
+  --color-void: oklch(0.12 0.035 155);
+  --color-canopy: oklch(0.18 0.055 154);
+  --color-panel: oklch(0.22 0.055 154);
+  --color-panel-soft: oklch(0.27 0.065 152);
+  --color-line: oklch(0.37 0.06 150);
+  --color-ink: oklch(0.95 0.025 145);
+  --color-charcoal: oklch(0.78 0.035 145);
+  --color-paper: oklch(0.18 0.055 154);
+  --color-mist: oklch(0.15 0.045 155);
+  --color-forest: oklch(0.42 0.09 148);
+  --color-sage: oklch(0.62 0.08 145);
+  --color-leaf: oklch(0.74 0.12 142);
+  --color-mint: oklch(0.86 0.08 145);
+  --color-lichen: oklch(0.52 0.075 145);
 
   --font-display: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
 }
 
-/*
- * Body background animates between flavor colors. We tween it via CSS
- * (not Framer Motion) because <body> sits OUTSIDE the React tree, so
- * mutating its style + a CSS transition is the simplest path.
- */
 body {
   margin: 0;
   font-family: var(--font-sans);
   color: var(--color-ink);
-  background-color: var(--color-paper);
+  background-color: var(--color-void);
   transition: background-color 900ms cubic-bezier(0.7, 0, 0.2, 1),
     color 900ms cubic-bezier(0.7, 0, 0.2, 1);
   -webkit-font-smoothing: antialiased;
@@ -54,18 +52,31 @@ body,
 
 .surface-grid {
   background-image:
-    linear-gradient(to right, oklch(0.15 0.02 165 / 0.06) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.15 0.02 165 / 0.06) 1px, transparent 1px);
-  background-size: 32px 32px;
+    linear-gradient(to right, oklch(0.86 0.08 145 / 0.055) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.86 0.08 145 / 0.055) 1px, transparent 1px);
+  background-size: 40px 40px;
 }
 
 .dark-grid {
   background-image:
-    linear-gradient(to right, oklch(0.99 0.004 165 / 0.08) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(0.99 0.004 165 / 0.08) 1px, transparent 1px);
-  background-size: 36px 36px;
+    linear-gradient(to right, oklch(0.86 0.08 145 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.86 0.08 145 / 0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
 .reveal-mask {
   mask-image: linear-gradient(90deg, transparent, black 18%, black 82%, transparent);
+}
+
+.aurora-frame {
+  background:
+    radial-gradient(circle at 15% 12%, oklch(0.52 0.075 145 / 0.22), transparent 28rem),
+    radial-gradient(circle at 82% 0%, oklch(0.74 0.12 142 / 0.16), transparent 24rem),
+    linear-gradient(135deg, var(--color-void), var(--color-canopy) 55%, var(--color-void));
+}
+
+.glass-frame {
+  background: linear-gradient(180deg, oklch(0.22 0.055 154 / 0.84), oklch(0.18 0.055 154 / 0.92));
+  box-shadow: inset 0 1px 0 oklch(0.86 0.08 145 / 0.12),
+    0 30px 120px oklch(0 0 0 / 0.35);
 }

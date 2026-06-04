@@ -1,31 +1,33 @@
 import { Link } from "react-router-dom";
-import { Bell, Search } from "lucide-react";
+import { Bell, Search, Sprout } from "lucide-react";
+import { motion } from "framer-motion";
 
-// Sticky-feeling top bar inside the phone frame. Greeting + quick actions.
 export default function TopBar() {
   return (
-    <header className="flex items-center justify-between px-5 pt-[max(1rem,env(safe-area-inset-top))]">
-      <Link to="/" className="flex items-center gap-2">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-ink text-white ring-1 ring-leaf/30">
-          <span className="text-lg font-black">S</span>
+    <header className="flex items-center justify-between border-b border-line/60 px-5 py-4 sm:px-8 lg:px-10">
+      <Link to="/" className="group flex items-center gap-3">
+        <span className="grid h-10 w-10 place-items-center rounded-xl bg-leaf/12 text-leaf ring-1 ring-leaf/25 transition group-hover:bg-leaf/18">
+          <Sprout className="h-5 w-5" />
         </span>
-        <span className="text-lg font-black text-ink">
-          Sproutly
-        </span>
+        <span className="text-lg font-black text-ink">Sproutly</span>
       </Link>
       <div className="flex items-center gap-2">
-        <button
+        <motion.button
           aria-label="Search"
-          className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink ring-1 ring-line transition hover:ring-ink/20"
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.96 }}
+          className="grid h-10 w-10 place-items-center rounded-full bg-panel-soft/70 text-mint ring-1 ring-line/70 transition hover:bg-leaf/15"
         >
           <Search className="h-4 w-4" />
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           aria-label="Notifications"
-          className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink ring-1 ring-line transition hover:ring-ink/20"
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.96 }}
+          className="grid h-10 w-10 place-items-center rounded-full bg-panel-soft/70 text-mint ring-1 ring-line/70 transition hover:bg-leaf/15"
         >
           <Bell className="h-4 w-4" />
-        </button>
+        </motion.button>
       </div>
     </header>
   );

@@ -1,37 +1,38 @@
 import PlaceholderCard from "../components/ui/PlaceholderCard";
+import { PageTitle, Reveal, Stagger, StaggerItem } from "../components/ui/Motion";
 
 // AI-assisted meal planner. Wireframe-only for now.
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export default function MealPlan() {
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-3xl font-black text-ink">
-          Meal plan
-        </h1>
-        <p className="text-sm font-medium text-charcoal/60">
-          Generate a week, swap meals, build a shopping list.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageTitle
+        eyebrow="Meal plan"
+        title="Generate the week, then keep control."
+        body="Plan meals, swap dishes, and build a shopping list around goals, budget, and pantry."
+      />
 
-      <button className="w-full rounded-lg bg-ink px-5 py-4 text-left text-white shadow-[0_20px_70px_-50px_black] transition hover:bg-violet">
-        <div className="text-lg font-black">Generate week</div>
-        <div className="text-xs text-white/70">
-          Tailored to your goals, budget, and pantry
-        </div>
-      </button>
+      <Reveal mode="scale">
+        <button className="w-full rounded-[1.5rem] border border-leaf/30 bg-leaf px-5 py-5 text-left text-void shadow-[0_28px_80px_-55px_oklch(0.74_0.12_142/0.7)] transition hover:bg-mint">
+          <div className="text-xl font-black">Generate week</div>
+          <div className="mt-1 text-xs font-bold text-void/70">
+            Tailored to your goals, budget, and pantry
+          </div>
+        </button>
+      </Reveal>
 
-      <div className="space-y-3">
+      <Stagger className="grid gap-3 lg:grid-cols-7">
         {DAYS.map((d) => (
-          <PlaceholderCard
-            key={d}
-            title={d}
-            subtitle="Breakfast · Lunch · Dinner"
-            tone="violet"
-          />
+          <StaggerItem key={d} mode="rise">
+            <PlaceholderCard
+              title={d}
+              subtitle="Breakfast · Lunch · Dinner"
+              tone={d === "Mon" ? "leaf" : d === "Fri" ? "mint" : "sage"}
+            />
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </div>
   );
 }

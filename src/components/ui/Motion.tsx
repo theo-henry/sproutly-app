@@ -129,7 +129,7 @@ export function PageTitle({
   const words = title.split(" ");
 
   return (
-    <header className="grid gap-5 border-b border-line/60 pb-6 sm:grid-cols-[1fr_auto] sm:items-end">
+    <header className="grid gap-5 border-b border-line/60 pb-6">
       <div>
         <Reveal mode="wipe">
           <p className="text-xs font-black uppercase tracking-[0.26em] text-leaf/80">
@@ -140,7 +140,7 @@ export function PageTitle({
           initial="hidden"
           animate="show"
           variants={{ show: { transition: { staggerChildren: 0.045 } } }}
-          className="mt-3 max-w-3xl text-4xl font-black leading-none text-ink sm:text-6xl"
+          className="mt-3 max-w-3xl text-4xl font-black leading-none text-ink"
         >
           {words.map((word, index) => (
             <motion.span
@@ -158,7 +158,7 @@ export function PageTitle({
         </motion.h1>
         {body ? (
           <Reveal delay={0.12} mode="drift">
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-charcoal sm:text-base">
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-charcoal">
               {body}
             </p>
           </Reveal>

@@ -13,7 +13,7 @@ export default function Products() {
       />
 
       <Reveal mode="drift">
-        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+        <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5">
         {["All", "Pantry", "Dairy-free", "Snacks", "Frozen", "Drinks"].map(
           (c) => (
             <button
@@ -29,7 +29,7 @@ export default function Products() {
 
       <section>
         <SectionHeader title="Deals this week" />
-        <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stagger className="grid grid-cols-1 gap-3">
           <StaggerItem mode="scale">
             <PlaceholderCard title="Oat milk barista" subtitle="€2.49 · -25%" tone="leaf" meta="Deal" />
           </StaggerItem>

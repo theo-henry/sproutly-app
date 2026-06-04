@@ -32,7 +32,7 @@ export default function Recipes() {
 
       <section>
         <SectionHeader title="Quick & easy" />
-        <Stagger className="grid gap-3 lg:grid-cols-3">
+        <Stagger className="grid gap-3">
           <StaggerItem mode="scale">
             <PlaceholderCard title="15-min peanut noodles" subtitle="One pan · 12g protein" tone="moss" meta="Fast" />
           </StaggerItem>
@@ -47,7 +47,7 @@ export default function Recipes() {
 
       <section>
         <SectionHeader title="Seasonal picks" />
-        <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <Stagger className="grid grid-cols-1 gap-3">
           <StaggerItem mode="rise">
           <PlaceholderCard title="Roasted squash" tone="leaf" />
           </StaggerItem>

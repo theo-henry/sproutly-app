@@ -1,6 +1,9 @@
+import { lazy, Suspense } from "react";
 import SectionHeader from "../components/ui/SectionHeader";
 import PlaceholderCard from "../components/ui/PlaceholderCard";
-import { PageTitle, Reveal, Stagger, StaggerItem } from "../components/ui/Motion";
+import { Reveal, Stagger, StaggerItem } from "../components/ui/Motion";
+
+const PlantHero = lazy(() => import("../components/home/PlantHero"));
 
 const ACTIONS = [
   { title: "Log meal", subtitle: "Add breakfast or snack", tone: "sage" as const },
@@ -13,13 +16,31 @@ const ACTIONS = [
 export default function Home() {
   return (
     <div className="space-y-8">
-      <PageTitle
-        eyebrow="Home"
-        title="Plant-based decisions without friction."
-        body="A daily command center for meals, reminders, nearby options, and product signals."
-      />
+      <section className="relative -mx-4 -mt-4 h-[78vh] min-h-[460px] overflow-hidden rounded-b-[2rem] border-b border-line/40 bg-black">
+        <Suspense fallback={<div className="absolute inset-0 bg-black" />}>
+          <PlantHero className="absolute inset-0" />
+        </Suspense>
+        {/* Dark overlay — keeps text legible while preserving the plant's rim light. */}
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_30%,_rgba(0,0,0,0.55)_75%)]" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-black/55 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/70 to-transparent" />
 
-      <section className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="relative z-10 flex h-full flex-col justify-between p-6">
+          <div className="max-w-md">
+            <p className="text-xs font-black uppercase tracking-[0.32em] text-leaf/80">
+              Sproutly
+            </p>
+            <h1 className="mt-4 text-4xl font-black leading-[1.05] text-ink">
+              Plant-based decisions without friction.
+            </h1>
+          </div>
+          <p className="max-w-sm text-sm leading-6 text-charcoal/90">
+            A daily command center for meals, reminders, nearby options, and product signals.
+          </p>
+        </div>
+      </section>
+
+      <section className="grid gap-4">
         <Reveal mode="scale">
           <div className="dark-grid relative min-h-72 overflow-hidden rounded-[1.5rem] border border-line/70 bg-void p-6">
             <div className="absolute right-6 top-6 h-20 w-20 rounded-full border border-leaf/20" />
@@ -28,7 +49,7 @@ export default function Home() {
               <p className="text-xs font-black uppercase tracking-[0.24em] text-leaf/80">
                 Today
               </p>
-              <h2 className="mt-4 text-3xl font-black leading-tight text-ink sm:text-5xl">
+              <h2 className="mt-4 text-3xl font-black leading-tight text-ink">
                 Tofu scramble, lentil bowl, cashew greens.
               </h2>
               <p className="mt-4 max-w-md text-sm leading-6 text-charcoal">
@@ -68,7 +89,7 @@ export default function Home() {
 
       <section>
         <SectionHeader title="Quick actions" />
-        <Stagger className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Stagger className="grid grid-cols-1 gap-3">
           {ACTIONS.map((action, index) => (
             <StaggerItem key={action.title} mode={index === 1 ? "scale" : "rise"}>
               <PlaceholderCard {...action} />
@@ -79,7 +100,7 @@ export default function Home() {
 
       <section>
         <SectionHeader title="For you" href="/recipes" />
-        <Stagger className="grid gap-3 sm:grid-cols-2">
+        <Stagger className="grid gap-3">
           <StaggerItem mode="drift">
             <PlaceholderCard
               title="High-protein chickpea bowl"

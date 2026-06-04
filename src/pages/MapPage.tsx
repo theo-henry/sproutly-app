@@ -50,7 +50,7 @@ export default function MapPage() {
         </div>
       </Reveal>
 
-      <Stagger className="grid gap-3 lg:grid-cols-3">
+      <Stagger className="grid gap-3">
         <StaggerItem mode="drift">
           <PlaceholderCard tone="leaf" title="Green Garden Bistro" subtitle="100% plant-based · 0.4 km" meta="Open" />
         </StaggerItem>

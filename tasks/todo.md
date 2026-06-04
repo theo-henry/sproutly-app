@@ -14,3 +14,5 @@
 - [x] Add reusable varied animation primitives.
 - [x] Redesign the app shell and all tabs around the dark green frame style.
 - [x] Verify build and scan for off-palette colors.
+- [x] Make desktop render in a phone-like preview aspect ratio.
+- [x] Remove content breakpoints so desktop phone preview matches phone exactly.

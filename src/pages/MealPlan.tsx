@@ -22,7 +22,7 @@ export default function MealPlan() {
         </button>
       </Reveal>
 
-      <Stagger className="grid gap-3 lg:grid-cols-7">
+      <Stagger className="grid gap-3">
         {DAYS.map((d) => (
           <StaggerItem key={d} mode="rise">
             <PlaceholderCard

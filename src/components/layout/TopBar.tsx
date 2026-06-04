@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function TopBar() {
   return (
-    <header className="flex items-center justify-between border-b border-line/60 px-5 py-4 sm:px-8 lg:px-10">
+    <header className="flex items-center justify-between border-b border-line/60 px-5 py-4">
       <Link to="/" className="group flex items-center gap-3">
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-leaf/12 text-leaf ring-1 ring-leaf/25 transition group-hover:bg-leaf/18">
           <Sprout className="h-5 w-5" />

@@ -16,3 +16,6 @@
 - [x] Verify build and scan for off-palette colors.
 - [x] Make desktop render in a phone-like preview aspect ratio.
 - [x] Remove content breakpoints so desktop phone preview matches phone exactly.
+- [x] Add Supabase auth wiring for email/password login and account creation.
+- [x] Add shared demo account login through local environment credentials.
+- [x] Persist weekly meal plans per Supabase user with RLS-backed schema.

@@ -1,0 +1,13 @@
+# Copy to local.properties (gitignored). Android Studio writes sdk.dir here on first sync.
+sdk.dir=/Users/YOU/Library/Android/sdk
+
+# Supabase
+SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+SUPABASE_ANON_KEY=YOUR_ANON_KEY
+
+# Demo account
+DEMO_EMAIL=demo@sproutly.app
+DEMO_PASSWORD=demo-password
+
+# Optional: Google Maps API key for native map (Nearby tab).
+GOOGLE_MAPS_API_KEY=

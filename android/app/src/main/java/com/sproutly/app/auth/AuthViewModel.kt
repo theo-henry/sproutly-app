@@ -14,7 +14,7 @@ import kotlinx.coroutines.launch
 sealed interface AuthState {
     data object Loading : AuthState
     data object SignedOut : AuthState
-    data class SignedIn(val user: UserInfo?) : AuthState
+    data class SignedIn(val user: UserInfo?, val isDemo: Boolean = false) : AuthState
 }
 
 data class AuthFormState(
@@ -37,14 +37,14 @@ class AuthViewModel(
             _state.value = when (val initialEvent = repo.restoreSession()) {
                 AuthEvent.Loading -> AuthState.SignedOut
                 AuthEvent.SignedOut -> AuthState.SignedOut
-                is AuthEvent.SignedIn -> AuthState.SignedIn(initialEvent.user)
+                is AuthEvent.SignedIn -> AuthState.SignedIn(initialEvent.user, initialEvent.isDemo)
             }
 
             repo.authEvents().collect { event ->
                 _state.value = when (event) {
                     AuthEvent.Loading -> AuthState.Loading
                     AuthEvent.SignedOut -> AuthState.SignedOut
-                    is AuthEvent.SignedIn -> AuthState.SignedIn(event.user)
+                    is AuthEvent.SignedIn -> AuthState.SignedIn(event.user, event.isDemo)
                 }
             }
         }

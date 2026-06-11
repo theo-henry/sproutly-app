@@ -20,3 +20,4 @@
 - [x] Add shared demo account login through local environment credentials.
 - [x] Persist weekly meal plans per Supabase user with RLS-backed schema.
 - [x] Fix native Android auth startup so Supabase refresh failures cannot leave the app on an infinite loading screen.
+- [x] Make Try the demo open a local vegetarian demo account without Supabase login.

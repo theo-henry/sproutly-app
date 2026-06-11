@@ -2,6 +2,7 @@ package com.sproutly.app.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.sproutly.app.auth.data.DemoAccountStore
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
 import com.sproutly.app.core.result.UiState
@@ -39,6 +40,7 @@ class ProfileViewModel(
     }
 
     private fun defaultProfile(): Profile {
+        if (DemoAccountStore.isEnabled()) return DemoAccountStore.getProfile()
         val user = SupabaseClientProvider.client.auth.currentUserOrNull()
         return Profile(
             id = user?.id ?: "",

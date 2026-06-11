@@ -1,5 +1,6 @@
 package com.sproutly.app.mealplan.data
 
+import com.sproutly.app.auth.data.DemoAccountStore
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
 import com.sproutly.app.mealplan.model.MealPlan
@@ -24,6 +25,7 @@ class MealPlanRepository {
     )
 
     suspend fun getForWeek(weekStartISO: String): AppResult<MealPlan?> = runCatching {
+        if (DemoAccountStore.isEnabled()) return AppResult.Success(DemoAccountStore.getMealPlan(weekStartISO))
         val userId = client.auth.currentUserOrNull()?.id
             ?: return AppResult.Success(null)
         val row = table.select {
@@ -40,6 +42,7 @@ class MealPlanRepository {
     )
 
     suspend fun upsert(plan: MealPlan): AppResult<MealPlan> = runCatching {
+        if (DemoAccountStore.isEnabled()) return AppResult.Success(DemoAccountStore.saveMealPlan(plan))
         val userId = client.auth.currentUserOrNull()?.id
             ?: error("Not signed in")
         val payload = Row(userId = userId, weekStart = plan.weekStartISO, days = plan.days)

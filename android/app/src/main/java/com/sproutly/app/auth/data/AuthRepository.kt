@@ -1,6 +1,5 @@
 package com.sproutly.app.auth.data
 
-import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
 import io.github.jan.supabase.auth.auth
@@ -8,6 +7,7 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.auth.user.UserInfo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -18,11 +18,15 @@ class AuthRepository {
 
     fun currentUser(): UserInfo? = auth.currentUserOrNull()
 
-    fun authEvents(): Flow<AuthEvent> = auth.sessionStatus.map { status ->
-        status.toAuthEvent()
+    fun authEvents(): Flow<AuthEvent> = DemoAccountStore.enabled.combine(auth.sessionStatus) { isDemo, status ->
+        if (isDemo) AuthEvent.SignedIn(user = null, isDemo = true) else status.toAuthEvent()
     }
 
     suspend fun restoreSession(timeoutMillis: Long = 5_000): AuthEvent {
+        if (DemoAccountStore.isEnabled()) {
+            return AuthEvent.SignedIn(user = null, isDemo = true)
+        }
+
         val loadResult = withTimeoutOrNull(timeoutMillis) {
             auth.loadFromStorage()
         }
@@ -51,10 +55,15 @@ class AuthRepository {
         }
     }.toAppResult()
 
-    suspend fun signInDemo(): AppResult<Unit> =
-        signIn(AppConfig.demoEmail, AppConfig.demoPassword)
+    suspend fun signInDemo(): AppResult<Unit> = runCatching {
+        runCatching { auth.clearSession() }
+        DemoAccountStore.enable()
+    }.toAppResult()
 
-    suspend fun signOut(): AppResult<Unit> = runCatching { auth.signOut() }.toAppResult()
+    suspend fun signOut(): AppResult<Unit> = runCatching {
+        DemoAccountStore.clear()
+        auth.signOut()
+    }.toAppResult()
 
     private fun <T> Result<T>.toAppResult(): AppResult<Unit> = fold(
         onSuccess = { AppResult.Success(Unit) },
@@ -62,7 +71,7 @@ class AuthRepository {
     )
 
     private fun SessionStatus.toAuthEvent(): AuthEvent = when (this) {
-        is SessionStatus.Authenticated -> AuthEvent.SignedIn(session.user)
+        is SessionStatus.Authenticated -> AuthEvent.SignedIn(session.user, isDemo = false)
         is SessionStatus.NotAuthenticated -> AuthEvent.SignedOut
         is SessionStatus.RefreshFailure -> AuthEvent.SignedOut
         SessionStatus.Initializing -> AuthEvent.Loading
@@ -72,5 +81,5 @@ class AuthRepository {
 sealed interface AuthEvent {
     data object Loading : AuthEvent
     data object SignedOut : AuthEvent
-    data class SignedIn(val user: UserInfo?) : AuthEvent
+    data class SignedIn(val user: UserInfo?, val isDemo: Boolean = false) : AuthEvent
 }

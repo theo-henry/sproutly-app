@@ -3,6 +3,7 @@ package com.sproutly.app.profile.data
 import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
+import com.sproutly.app.auth.data.DemoAccountStore
 import com.sproutly.app.profile.model.Profile
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
@@ -14,6 +15,7 @@ class ProfileRepository {
     private val bucket get() = client.storage.from(AppConfig.AVATAR_BUCKET)
 
     suspend fun getCurrent(): AppResult<Profile?> = runCatching {
+        if (DemoAccountStore.isEnabled()) return AppResult.Success(DemoAccountStore.getProfile())
         val userId = client.auth.currentUserOrNull()?.id ?: return AppResult.Success(null)
         table.select { filter { eq("id", userId) } }
             .decodeSingleOrNull<Profile>()
@@ -23,6 +25,7 @@ class ProfileRepository {
     )
 
     suspend fun upsert(profile: Profile): AppResult<Profile> = runCatching {
+        if (DemoAccountStore.isEnabled()) return AppResult.Success(DemoAccountStore.saveProfile(profile))
         table.upsert(profile) { select() }.decodeSingle<Profile>()
     }.fold(
         onSuccess = { AppResult.Success(it) },
@@ -31,6 +34,7 @@ class ProfileRepository {
 
     suspend fun uploadAvatar(userId: String, bytes: ByteArray, ext: String = "jpg"): AppResult<String> =
         runCatching {
+            if (DemoAccountStore.isEnabled()) error("Avatar upload is unavailable in demo mode")
             val path = "$userId/avatar.$ext"
             bucket.upload(path, bytes) { upsert = true }
             path

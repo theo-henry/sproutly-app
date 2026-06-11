@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Path
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,8 +64,6 @@ fun NearbyMap(
                         mapLibre.uiSettings.isCompassEnabled = false
                         mapLibre.uiSettings.isLogoEnabled = false
                         mapLibre.uiSettings.isAttributionEnabled = false
-                        // Sensible starting camera so the user sees Madrid immediately,
-                        // before the first place query resolves.
                         mapLibre.moveCamera(
                             CameraUpdateFactory.newLatLngZoom(
                                 LatLng(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG),
@@ -90,7 +89,8 @@ fun NearbyMap(
         )
     }
 
-    LaunchedEffect(map, state.origin, state.places, selectedPlaceId) {
+    // Markers + listener — refreshed when the place set or selection changes.
+    LaunchedEffect(map, state.places, selectedPlaceId) {
         map?.let {
             it.setOnMarkerClickListener { marker ->
                 val place = state.places.firstOrNull { p -> p.id == marker.snippet }
@@ -98,6 +98,24 @@ fun NearbyMap(
             }
             updateMarkers(context, it, state, selectedPlaceId)
         }
+    }
+
+    // Camera follows origin (initial load + locate-me).
+    LaunchedEffect(map, state.origin) {
+        map?.animateCamera(
+            CameraUpdateFactory.newLatLngZoom(
+                LatLng(state.origin.lat, state.origin.lng),
+                13.0,
+            )
+        )
+    }
+
+    // Camera flies to selected place at a moderate zoom.
+    LaunchedEffect(map, selectedPlaceId, state.places) {
+        val place = state.places.firstOrNull { it.id == selectedPlaceId } ?: return@LaunchedEffect
+        val lat = place.lat ?: return@LaunchedEffect
+        val lng = place.lng ?: return@LaunchedEffect
+        map?.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(lat, lng), 15.5))
     }
 }
 
@@ -133,57 +151,108 @@ private fun updateMarkers(
     state: NearbyUiState,
     selectedPlaceId: String?,
 ) {
-    val origin = LatLng(state.origin.lat, state.origin.lng)
     val iconFactory = IconFactory.getInstance(context)
     map.clear()
 
     map.addMarker(
         MarkerOptions()
-            .position(origin)
+            .position(LatLng(state.origin.lat, state.origin.lng))
             .title("You are here")
-            .icon(iconFactory.fromBitmap(dotBitmap(Color.rgb(124, 231, 178), 38, stroke = true)))
+            .icon(iconFactory.fromBitmap(userDotBitmap()))
     )
 
     state.places.forEach { place ->
         val lat = place.lat ?: return@forEach
         val lng = place.lng ?: return@forEach
         val selected = place.id == selectedPlaceId
-        val color = when (place.kind) {
-            PlaceKind.FULLY_PLANT_BASED -> Color.rgb(168, 235, 142)
-            PlaceKind.PLANT_FRIENDLY -> Color.rgb(109, 214, 154)
-            PlaceKind.SUPERMARKET -> Color.rgb(246, 198, 105)
-            PlaceKind.RESTAURANT -> Color.rgb(149, 216, 191)
-        }
+        val color = if (selected) AMBER_SELECTED else colorFor(place.kind)
 
         map.addMarker(
             MarkerOptions()
                 .position(LatLng(lat, lng))
                 .title(place.name)
                 .snippet(place.id)
-                .icon(iconFactory.fromBitmap(dotBitmap(color, if (selected) 42 else 30, stroke = selected)))
+                .icon(iconFactory.fromBitmap(pinBitmap(color, selected = selected)))
         )
     }
-
-    map.animateCamera(CameraUpdateFactory.newLatLngZoom(origin, 13.0))
 }
 
-private fun dotBitmap(color: Int, size: Int, stroke: Boolean): Bitmap {
-    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+private val AMBER_SELECTED = Color.rgb(255, 188, 66)
+
+private fun colorFor(kind: PlaceKind): Int = when (kind) {
+    PlaceKind.FULLY_PLANT_BASED -> Color.rgb(110, 218, 138)
+    PlaceKind.PLANT_FRIENDLY -> Color.rgb(46, 189, 126)
+    PlaceKind.SUPERMARKET -> Color.rgb(246, 198, 105)
+    PlaceKind.RESTAURANT -> Color.rgb(124, 231, 178)
+}
+
+/**
+ * Teardrop map pin. MarkerOptions anchors the bitmap by its geometric center, so
+ * the bitmap is drawn 2× the pin's height with the pin in the top half — that
+ * puts the tip exactly at the center, which then sits on the geographic point.
+ */
+private fun pinBitmap(color: Int, selected: Boolean): Bitmap {
+    val width = if (selected) 52 else 44
+    val pinHeight = (width * 1.35f).toInt()
+    val totalHeight = pinHeight * 2
+
+    val bitmap = Bitmap.createBitmap(width, totalHeight, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bitmap)
-    val radius = size / 2f
     val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    if (stroke) {
-        paint.color = Color.WHITE
-        canvas.drawCircle(radius, radius, radius * 0.48f, paint)
-    }
+    val cx = width / 2f
+    val headRadius = width * 0.4f
+    val headCy = headRadius + 3f
+    val tipY = pinHeight.toFloat() - 1f
 
+    // Soft drop shadow under the tip.
+    paint.color = Color.argb(110, 0, 0, 0)
+    canvas.drawOval(
+        cx - headRadius * 0.55f, tipY - 2f,
+        cx + headRadius * 0.55f, tipY + 5f,
+        paint,
+    )
+
+    // Pin body: head circle + downward triangle to the tip.
     paint.color = color
-    canvas.drawCircle(radius, radius, if (stroke) radius * 0.34f else radius * 0.42f, paint)
-
-    if (!stroke) {
-        paint.color = Color.argb(72, Color.red(color), Color.green(color), Color.blue(color))
-        canvas.drawCircle(radius, radius, radius * 0.48f, paint)
+    val body = Path().apply {
+        moveTo(cx, tipY)
+        lineTo(cx - headRadius * 0.78f, headCy + headRadius * 0.55f)
+        lineTo(cx + headRadius * 0.78f, headCy + headRadius * 0.55f)
+        close()
     }
+    canvas.drawPath(body, paint)
+    canvas.drawCircle(cx, headCy, headRadius, paint)
+
+    // White outline so the pin reads against any tile color.
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = if (selected) 4f else 2.5f
+    paint.color = Color.WHITE
+    canvas.drawCircle(cx, headCy, headRadius, paint)
+    paint.style = Paint.Style.FILL
+
+    // White inner dot.
+    paint.color = Color.WHITE
+    canvas.drawCircle(cx, headCy, headRadius * 0.36f, paint)
+
+    return bitmap
+}
+
+/** Soft "you are here" dot with a translucent halo. */
+private fun userDotBitmap(): Bitmap {
+    val size = 44
+    val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    val r = size / 2f
+
+    paint.color = Color.argb(70, 124, 231, 178)
+    canvas.drawCircle(r, r, r * 0.95f, paint)
+
+    paint.color = Color.WHITE
+    canvas.drawCircle(r, r, r * 0.48f, paint)
+
+    paint.color = Color.rgb(124, 231, 178)
+    canvas.drawCircle(r, r, r * 0.32f, paint)
     return bitmap
 }

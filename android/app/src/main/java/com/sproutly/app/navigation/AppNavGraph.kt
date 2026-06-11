@@ -13,6 +13,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -59,6 +62,8 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
+    var nearbyFromProducts by remember { mutableStateOf(false) }
+    var nearbyStoreHint by remember { mutableStateOf<String?>(null) }
 
     val showBottomBar = currentRoute in bottomNavItems.map { it.route }
 
@@ -72,6 +77,10 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
+                                if (item.route == Routes.NEARBY) {
+                                    nearbyFromProducts = false
+                                    nearbyStoreHint = null
+                                }
                                 navController.navigate(item.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
@@ -108,9 +117,23 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
                 )
             }
             composable(Routes.PRODUCTS) {
-                ProductsScreen(onOpenScanner = { navController.navigate(Routes.SCANNER) })
+                ProductsScreen(
+                    onOpenScanner = { navController.navigate(Routes.SCANNER) },
+                    onOpenNearbyStore = { storeName ->
+                        nearbyFromProducts = true
+                        nearbyStoreHint = storeName
+                        navController.navigate(Routes.NEARBY) {
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
-            composable(Routes.NEARBY) { NearbyScreen() }
+            composable(Routes.NEARBY) {
+                NearbyScreen(
+                    initialSupermarketMode = nearbyFromProducts,
+                    productStoreHint = nearbyStoreHint,
+                )
+            }
             composable(Routes.RECIPES) {
                 RecipesScreen(onOpenMealPlan = { navController.navigate(Routes.MEAL_PLAN) })
             }

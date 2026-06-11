@@ -13,9 +13,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.NearMe
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,10 +54,22 @@ import com.sproutly.app.nearby.model.PlaceKind
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
+fun NearbyScreen(
+    initialSupermarketMode: Boolean = false,
+    productStoreHint: String? = null,
+    viewModel: NearbyViewModel = viewModel(),
+) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var selectedPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
+    val scrollState = rememberScrollState()
+    val selectedPlace = state.places.firstOrNull { it.id == selectedPlaceId }
+
+    LaunchedEffect(selectedPlaceId) {
+        if (selectedPlaceId != null && scrollState.value > 0) {
+            scrollState.animateScrollTo(0)
+        }
+    }
 
     val locationPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -69,6 +84,10 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
             PermissionHelpers.isGranted(context, Manifest.permission.ACCESS_COARSE_LOCATION)
         viewModel.loadInitial(granted)
         if (!granted) locationLauncher.launch(locationPermissions)
+    }
+
+    LaunchedEffect(initialSupermarketMode, productStoreHint) {
+        if (initialSupermarketMode) viewModel.focusSupermarkets()
     }
 
     Scaffold(
@@ -93,7 +112,7 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 18.dp)
                 .padding(top = 4.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
@@ -106,10 +125,12 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
                     onPlaceSelected = { selectedPlaceId = it.id },
                     modifier = Modifier.fillMaxSize(),
                 )
-                MapHeaderChip(
-                    state = state,
-                    modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
-                )
+                if (selectedPlace == null) {
+                    MapHeaderChip(
+                        state = state,
+                        modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
+                    )
+                }
                 LocateButton(
                     enabled = !state.loading,
                     onClick = {
@@ -127,6 +148,19 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
                         trackColor = Color.Transparent,
                     )
                 }
+                if (selectedPlace != null) {
+                    SelectedPlaceOverlay(
+                        place = selectedPlace,
+                        onDismiss = { selectedPlaceId = null },
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 12.dp, vertical = 12.dp),
+                    )
+                }
+            }
+
+            if (initialSupermarketMode) {
+                ProductStorePrompt(productStoreHint)
             }
 
             FiltersSection(
@@ -159,6 +193,31 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
 // ── Map overlays ────────────────────────────────────────────────────────────
 
 @Composable
+private fun ProductStorePrompt(storeName: String?) {
+    SproutlyCard(accent = true) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Icon(Icons.Outlined.Storefront, contentDescription = null, tint = LeafMint)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    storeName?.let { "Good place to check: $it" } ?: "Supermarkets for your cart",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "Product availability is an estimate for the MVP, not live stock.",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun MapHeaderChip(state: NearbyUiState, modifier: Modifier = Modifier) {
     val location = if (state.locationSource == LocationSource.DEVICE) "Your area" else "Madrid"
     val diet = when (state.filters.dietFocus) {
@@ -187,6 +246,70 @@ private fun MapHeaderChip(state: NearbyUiState, modifier: Modifier = Modifier) {
             Text(location, color = TextPrimary, style = MaterialTheme.typography.labelMedium)
             Text("·", color = TextMuted, style = MaterialTheme.typography.labelMedium)
             Text(diet, color = LeafMint, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+/**
+ * Compact card that anchors to the bottom of the map when a place is selected.
+ * Shows the name + distance from the user, with a close button to clear.
+ *
+ * Future: the leading slot can host an image (Google Places Photos requires a
+ * paid API key; Wikidata `image=*` tags are present on only a handful of POIs,
+ * so this is wired but unused for now).
+ */
+@Composable
+private fun SelectedPlaceOverlay(
+    place: Place,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = BgDeep.copy(alpha = 0.94f),
+        modifier = modifier
+            .fillMaxWidth()
+            .border(1.dp, Divider, RoundedCornerShape(18.dp)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    place.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                )
+                Spacer(Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Outlined.NearMe,
+                        contentDescription = null,
+                        tint = LeafMint,
+                        modifier = Modifier.size(12.dp),
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        "${place.distanceKm} km away",
+                        color = TextMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    if (place.kind == PlaceKind.FULLY_PLANT_BASED) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "· plant-only",
+                            color = LeafMint,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+            IconButton(onClick = onDismiss, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Outlined.Close, contentDescription = "Close", tint = TextMuted)
+            }
         }
     }
 }

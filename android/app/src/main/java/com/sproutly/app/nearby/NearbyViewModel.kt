@@ -67,6 +67,22 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
         reload(useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE)
     }
 
+    fun focusSupermarkets() {
+        val current = _state.value
+        _state.value = current.copy(
+            filters = current.filters.copy(
+                fullyPlantBased = false,
+                plantFriendly = false,
+                supermarkets = true,
+                restaurants = false,
+                openNow = false,
+            )
+        )
+        if (initialized) {
+            reload(useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE)
+        }
+    }
+
     private suspend fun applyDietPreference() {
         when (val r = profileRepo.getCurrent()) {
             is AppResult.Success -> {

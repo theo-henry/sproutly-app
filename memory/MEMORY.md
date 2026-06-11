@@ -8,3 +8,4 @@
 - `project_green_awwwards_style.md`: Sproutly should use a dark green, sleek, restrained Awwwards-inspired web app style with varied premium motion.
 - `project_desktop_phone_preview.md`: On desktop, show Sproutly in a phone-like aspect ratio for preview; actual phones stay fullscreen.
 - `project_phone_preview_matches_phone.md`: Desktop phone preview must match the real phone view; avoid content breakpoints inside the framed app.
+- `project_instruction_sync.md`: Before writing code or project files, read `CLAUDE.md` and all `memory/` files, then update stale instructions before implementation.

@@ -19,3 +19,4 @@
 - [x] Add Supabase auth wiring for email/password login and account creation.
 - [x] Add shared demo account login through local environment credentials.
 - [x] Persist weekly meal plans per Supabase user with RLS-backed schema.
+- [x] Fix native Android auth startup so Supabase refresh failures cannot leave the app on an infinite loading screen.

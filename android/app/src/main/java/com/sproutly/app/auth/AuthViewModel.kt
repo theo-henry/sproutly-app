@@ -34,6 +34,12 @@ class AuthViewModel(
 
     init {
         viewModelScope.launch {
+            _state.value = when (val initialEvent = repo.restoreSession()) {
+                AuthEvent.Loading -> AuthState.SignedOut
+                AuthEvent.SignedOut -> AuthState.SignedOut
+                is AuthEvent.SignedIn -> AuthState.SignedIn(initialEvent.user)
+            }
+
             repo.authEvents().collect { event ->
                 _state.value = when (event) {
                     AuthEvent.Loading -> AuthState.Loading

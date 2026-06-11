@@ -23,7 +23,9 @@ object SupabaseClientProvider {
             supabaseKey = AppConfig.supabaseAnonKey,
         ) {
             httpEngine = OkHttp.create()
-            install(Auth)
+            install(Auth) {
+                autoLoadFromStorage = false
+            }
             install(Postgrest)
             install(Storage)
             install(Realtime)

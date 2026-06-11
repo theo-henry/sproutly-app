@@ -3,10 +3,13 @@ package com.sproutly.app.nearby.ui
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -23,21 +26,24 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sproutly.app.core.design.BgDeep
-import com.sproutly.app.core.design.Chip
+import com.sproutly.app.core.design.BgSurface
 import com.sproutly.app.core.design.Divider
 import com.sproutly.app.core.design.LeafMint
 import com.sproutly.app.core.design.MintPillButton
-import com.sproutly.app.core.design.SectionLabel
 import com.sproutly.app.core.design.SproutlyCard
 import com.sproutly.app.core.design.TextMuted
 import com.sproutly.app.core.design.TextPrimary
 import com.sproutly.app.core.permissions.PermissionHelpers
+import com.sproutly.app.nearby.NearbyUiState
 import com.sproutly.app.nearby.NearbyViewModel
+import com.sproutly.app.nearby.model.DietFocus
 import com.sproutly.app.nearby.model.LocationSource
 import com.sproutly.app.nearby.model.NearbyFilters
 import com.sproutly.app.nearby.model.Place
@@ -49,67 +55,81 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var selectedPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
+
     val locationPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.ACCESS_COARSE_LOCATION,
     )
     val locationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
-    ) { result ->
-        viewModel.onLocationPermissionResult(result.values.any { it })
-    }
+    ) { result -> viewModel.onLocationPermissionResult(result.values.any { it }) }
 
     LaunchedEffect(Unit) {
-        val hasLocationPermission = PermissionHelpers.hasFineLocation(context) ||
+        val granted = PermissionHelpers.hasFineLocation(context) ||
             PermissionHelpers.isGranted(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-        viewModel.loadInitial(hasLocationPermission)
-        if (!hasLocationPermission) {
-            locationLauncher.launch(locationPermissions)
-        }
+        viewModel.loadInitial(granted)
+        if (!granted) locationLauncher.launch(locationPermissions)
     }
 
     Scaffold(
         containerColor = BgDeep,
         topBar = {
             TopAppBar(
-                title = { Text("Nearby") },
+                title = { Text("Nearby", fontWeight = FontWeight.SemiBold) },
                 actions = {
                     IconButton(onClick = viewModel::refresh, enabled = !state.loading) {
-                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh nearby places")
+                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = BgDeep,
                     titleContentColor = TextPrimary,
                     actionIconContentColor = TextPrimary,
-                )
+                ),
             )
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 18.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .padding(horizontal = 18.dp)
+                .padding(top = 4.dp, bottom = 40.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
-            LocationStatus(
-                source = state.locationSource,
-                loading = state.loading,
-                onRequestLocation = { locationLauncher.launch(locationPermissions) },
-            )
+            // Map with slim overlays — no card above it.
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+                NearbyMap(
+                    state = state,
+                    selectedPlaceId = selectedPlaceId,
+                    onPlaceSelected = { selectedPlaceId = it.id },
+                    modifier = Modifier.fillMaxSize(),
+                )
+                MapHeaderChip(
+                    state = state,
+                    modifier = Modifier.align(Alignment.TopStart).padding(12.dp),
+                )
+                LocateButton(
+                    enabled = !state.loading,
+                    onClick = {
+                        if (state.locationSource == LocationSource.DEVICE) viewModel.refresh()
+                        else locationLauncher.launch(locationPermissions)
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
+                )
+                if (state.loading) {
+                    LinearProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth(),
+                        color = LeafMint,
+                        trackColor = Color.Transparent,
+                    )
+                }
+            }
 
-            NearbyMap(
-                state = state,
-                selectedPlaceId = selectedPlaceId,
-                onPlaceSelected = { selectedPlaceId = it.id },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(260.dp),
-            )
-
-            FilterRow(
+            FiltersSection(
                 filters = state.filters,
                 onChange = {
                     selectedPlaceId = null
@@ -117,132 +137,187 @@ fun NearbyScreen(viewModel: NearbyViewModel = viewModel()) {
                 },
             )
 
+            ResultsHeader(state)
+
             if (state.error != null) {
-                ErrorCard(
-                    message = state.error ?: "Could not load nearby places.",
-                    onRetry = viewModel::refresh,
-                )
-            }
-
-            if (state.loading) {
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth(),
-                    color = LeafMint,
-                    trackColor = Divider,
-                )
-            }
-
-            SectionLabel("Vegetarian restaurants and supermarkets")
-
-            if (!state.loading && state.places.isEmpty() && state.error == null) {
+                ErrorCard(state.error ?: "Could not load nearby places.", onRetry = viewModel::refresh)
+            } else if (!state.loading && state.places.isEmpty()) {
                 EmptyCard()
-            }
-
-            state.places.forEach { place ->
-                PlaceRow(
-                    place = place,
-                    selected = place.id == selectedPlaceId,
-                    onClick = { selectedPlaceId = place.id },
-                )
-            }
-
-            Spacer(Modifier.height(40.dp))
-        }
-    }
-}
-
-@Composable
-private fun LocationStatus(
-    source: LocationSource,
-    loading: Boolean,
-    onRequestLocation: () -> Unit,
-) {
-    SproutlyCard {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Icon(
-                imageVector = if (source == LocationSource.DEVICE) {
-                    Icons.Outlined.MyLocation
-                } else {
-                    Icons.Outlined.LocationOn
-                },
-                contentDescription = null,
-                tint = LeafMint,
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = if (source == LocationSource.DEVICE) {
-                        "Using your device location"
-                    } else {
-                        "Showing central Madrid"
-                    },
-                    color = TextPrimary,
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                Text(
-                    text = if (source == LocationSource.DEVICE) {
-                        "Results update around your current position."
-                    } else {
-                        "Allow location for nearby results around you."
-                    },
-                    color = TextMuted,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            if (source == LocationSource.MADRID_FALLBACK) {
-                TextButton(onClick = onRequestLocation, enabled = !loading) {
-                    Text("Use GPS")
+            } else {
+                state.places.forEach { place ->
+                    PlaceRow(
+                        place = place,
+                        selected = place.id == selectedPlaceId,
+                        onClick = { selectedPlaceId = place.id },
+                    )
                 }
             }
         }
     }
 }
 
+// ── Map overlays ────────────────────────────────────────────────────────────
+
 @Composable
-private fun FilterRow(
-    filters: NearbyFilters,
-    onChange: (NearbyFilters) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+private fun MapHeaderChip(state: NearbyUiState, modifier: Modifier = Modifier) {
+    val location = if (state.locationSource == LocationSource.DEVICE) "Your area" else "Madrid"
+    val diet = when (state.filters.dietFocus) {
+        DietFocus.VEGAN -> "Vegan"
+        DietFocus.VEGETARIAN -> "Vegetarian"
+        DietFocus.FLEXIBLE -> "Plant-friendly"
+    }
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = BgDeep.copy(alpha = 0.72f),
+        modifier = modifier.border(1.dp, Divider, RoundedCornerShape(50)),
     ) {
-        Chip("All", selected = filters == NearbyFilters(maxDistanceKm = filters.maxDistanceKm)) {
-            onChange(NearbyFilters(maxDistanceKm = filters.maxDistanceKm))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = if (state.locationSource == LocationSource.DEVICE) {
+                    Icons.Outlined.MyLocation
+                } else Icons.Outlined.LocationOn,
+                contentDescription = null,
+                tint = LeafMint,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(location, color = TextPrimary, style = MaterialTheme.typography.labelMedium)
+            Text("·", color = TextMuted, style = MaterialTheme.typography.labelMedium)
+            Text(diet, color = LeafMint, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
         }
-        Chip("Vegetarian", selected = filters.plantFriendly) {
-            onChange(filters.copy(plantFriendly = !filters.plantFriendly))
+    }
+}
+
+@Composable
+private fun LocateButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        shape = CircleShape,
+        color = BgDeep.copy(alpha = 0.78f),
+        modifier = modifier
+            .size(36.dp)
+            .border(1.dp, Divider, CircleShape)
+            .clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                Icons.Outlined.MyLocation,
+                contentDescription = "Locate me",
+                tint = if (enabled) LeafMint else TextMuted,
+                modifier = Modifier.size(18.dp),
+            )
         }
-        Chip("Fully plant-based", selected = filters.fullyPlantBased) {
-            onChange(filters.copy(fullyPlantBased = !filters.fullyPlantBased))
+    }
+}
+
+// ── Filters ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun FiltersSection(filters: NearbyFilters, onChange: (NearbyFilters) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text(
+            "FILTERS",
+            color = TextMuted,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterPill(
+                "All",
+                selected = !filters.fullyPlantBased && !filters.plantFriendly &&
+                    !filters.supermarkets && !filters.restaurants && !filters.openNow,
+            ) {
+                onChange(
+                    filters.copy(
+                        fullyPlantBased = false,
+                        plantFriendly = false,
+                        supermarkets = false,
+                        restaurants = false,
+                        openNow = false,
+                    )
+                )
+            }
+            FilterPill("Restaurants", selected = filters.restaurants) {
+                onChange(filters.copy(restaurants = !filters.restaurants))
+            }
+            FilterPill("Supermarkets", selected = filters.supermarkets) {
+                onChange(filters.copy(supermarkets = !filters.supermarkets))
+            }
+            FilterPill("Plant-only", selected = filters.fullyPlantBased) {
+                onChange(filters.copy(fullyPlantBased = !filters.fullyPlantBased))
+            }
+            FilterPill("Veg-friendly", selected = filters.plantFriendly) {
+                onChange(filters.copy(plantFriendly = !filters.plantFriendly))
+            }
+            FilterPill("Open now", selected = filters.openNow) {
+                onChange(filters.copy(openNow = !filters.openNow))
+            }
+            FilterPill("≤ 5 km", selected = filters.maxDistanceKm == 5.0) {
+                onChange(filters.copy(maxDistanceKm = 5.0))
+            }
+            FilterPill("≤ 10 km", selected = filters.maxDistanceKm == 10.0) {
+                onChange(filters.copy(maxDistanceKm = 10.0))
+            }
         }
-        Chip("Restaurants", selected = filters.restaurants) {
-            onChange(filters.copy(restaurants = !filters.restaurants))
-        }
-        Chip("Supermarkets", selected = filters.supermarkets) {
-            onChange(filters.copy(supermarkets = !filters.supermarkets))
-        }
-        Chip("5 km", selected = filters.maxDistanceKm == 5.0) {
-            onChange(filters.copy(maxDistanceKm = 5.0))
-        }
-        Chip("10 km", selected = filters.maxDistanceKm == 10.0) {
-            onChange(filters.copy(maxDistanceKm = 10.0))
-        }
+    }
+}
+
+@Composable
+private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
+    val bg = if (selected) LeafMint else BgSurface
+    val fg = if (selected) BgDeep else TextPrimary
+    val borderColor = if (selected) LeafMint else Divider
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = bg,
+        contentColor = fg,
+        modifier = Modifier
+            .border(1.dp, borderColor, RoundedCornerShape(50))
+            .clickable(onClick = onClick),
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+        )
+    }
+}
+
+// ── Results & states ────────────────────────────────────────────────────────
+
+@Composable
+private fun ResultsHeader(state: NearbyUiState) {
+    val visible = state.places.size
+    val radius = state.filters.maxDistanceKm.toInt()
+    val text = when {
+        state.loading -> "Searching within $radius km…"
+        state.error != null -> "We hit a snag"
+        visible == 0 -> "No matches within $radius km"
+        visible == 1 -> "1 spot within $radius km"
+        else -> "$visible spots within $radius km"
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(if (state.error != null) Color(0xFFE07A6A) else LeafMint),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(text, color = TextPrimary, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
     }
 }
 
 @Composable
 private fun ErrorCard(message: String, onRetry: () -> Unit) {
     SproutlyCard {
-        Text(
-            text = "OpenStreetMap search failed",
-            color = TextPrimary,
-            style = MaterialTheme.typography.titleMedium,
-        )
+        Text("Couldn't reach OpenStreetMap", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(message, color = TextMuted, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(12.dp))
@@ -253,14 +328,10 @@ private fun ErrorCard(message: String, onRetry: () -> Unit) {
 @Composable
 private fun EmptyCard() {
     SproutlyCard {
-        Text(
-            text = "No matching places found nearby",
-            color = TextPrimary,
-            style = MaterialTheme.typography.titleMedium,
-        )
+        Text("Nothing matches here yet", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(
-            text = "Try the 10 km radius or fewer filters. Madrid coverage depends on OpenStreetMap tags.",
+            "Try widening to 10 km or removing a filter. Coverage depends on community-tagged OpenStreetMap data.",
             color = TextMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
@@ -269,21 +340,14 @@ private fun EmptyCard() {
 
 @Composable
 private fun PlaceRow(place: Place, selected: Boolean, onClick: () -> Unit) {
-    SproutlyCard(
-        accent = selected,
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
+    SproutlyCard(accent = selected, modifier = Modifier.clickable(onClick = onClick)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        place.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = TextPrimary,
-                    )
+                    Text(place.name, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                     KindBadge(place.kind)
                 }
                 Spacer(Modifier.height(4.dp))
@@ -311,7 +375,6 @@ private fun KindBadge(kind: PlaceKind) {
         PlaceKind.SUPERMARKET -> "market"
         PlaceKind.RESTAURANT -> "food"
     }
-
     Surface(
         shape = RoundedCornerShape(50),
         color = LeafMint.copy(alpha = 0.14f),

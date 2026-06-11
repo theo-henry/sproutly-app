@@ -4,11 +4,15 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.sproutly.app.core.config.AppConfig
+import com.sproutly.app.core.result.AppResult
 import com.sproutly.app.nearby.data.PlaceRepository
+import com.sproutly.app.nearby.model.DietFocus
 import com.sproutly.app.nearby.model.GeoPoint
 import com.sproutly.app.nearby.model.LocationSource
 import com.sproutly.app.nearby.model.NearbyFilters
 import com.sproutly.app.nearby.model.Place
+import com.sproutly.app.profile.data.ProfileRepository
+import com.sproutly.app.profile.model.DietPreference
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,10 +26,12 @@ data class NearbyUiState(
     val loading: Boolean = false,
     val requestingLocationPermission: Boolean = false,
     val error: String? = null,
+    val dietPreferenceLabel: String? = null,
 )
 
 class NearbyViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = PlaceRepository(application.applicationContext)
+    private val profileRepo = ProfileRepository()
 
     private val _state = MutableStateFlow(NearbyUiState())
     val state: StateFlow<NearbyUiState> = _state.asStateFlow()
@@ -36,12 +42,13 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
         if (initialized) return
         initialized = true
 
+        viewModelScope.launch { applyDietPreference() }
+
         if (!hasLocationPermission) {
             _state.value = _state.value.copy(requestingLocationPermission = true)
             reload(useDeviceLocation = false)
             return
         }
-
         reload(useDeviceLocation = true)
     }
 
@@ -51,6 +58,7 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun refresh() {
+        viewModelScope.launch { applyDietPreference() }
         reload(useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE)
     }
 
@@ -59,17 +67,27 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
         reload(useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE)
     }
 
+    private suspend fun applyDietPreference() {
+        when (val r = profileRepo.getCurrent()) {
+            is AppResult.Success -> {
+                val pref = DietPreference.fromValue(r.data?.dietPreference)
+                val focus = pref.toDietFocus()
+                _state.value = _state.value.copy(
+                    filters = _state.value.filters.copy(dietFocus = focus),
+                    dietPreferenceLabel = pref?.label,
+                )
+            }
+            is AppResult.Failure -> Unit // keep existing focus; not fatal
+        }
+    }
+
     private fun reload(useDeviceLocation: Boolean) {
         viewModelScope.launch {
             _state.value = _state.value.copy(loading = true, error = null)
 
             val deviceLocation = if (useDeviceLocation) repo.currentLocation() else null
             val origin = deviceLocation ?: GeoPoint(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG)
-            val source = if (deviceLocation != null) {
-                LocationSource.DEVICE
-            } else {
-                LocationSource.MADRID_FALLBACK
-            }
+            val source = if (deviceLocation != null) LocationSource.DEVICE else LocationSource.MADRID_FALLBACK
 
             try {
                 val places = repo.nearby(origin, _state.value.filters)
@@ -91,4 +109,10 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+}
+
+private fun DietPreference?.toDietFocus(): DietFocus = when (this) {
+    DietPreference.VEGAN, DietPreference.WHOLE_FOOD_PLANT_BASED -> DietFocus.VEGAN
+    DietPreference.VEGETARIAN, DietPreference.MOSTLY_PLANT_BASED -> DietFocus.VEGETARIAN
+    DietPreference.FLEXITARIAN, DietPreference.OTHER, null -> DietFocus.FLEXIBLE
 }

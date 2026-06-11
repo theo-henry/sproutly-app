@@ -31,6 +31,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.core.design.BgDeep
 import com.sproutly.app.core.design.TextPrimary
+import com.sproutly.app.core.network.OsmStyle
 import com.sproutly.app.nearby.NearbyUiState
 import com.sproutly.app.nearby.model.Place
 import com.sproutly.app.nearby.model.PlaceKind
@@ -40,6 +41,7 @@ import org.maplibre.android.camera.CameraUpdateFactory
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.maps.MapLibreMap
 import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
 
 @Composable
 fun NearbyMap(
@@ -52,15 +54,23 @@ fun NearbyMap(
     val mapView = rememberMapViewWithLifecycle()
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
 
-    Box(modifier = modifier.clip(RoundedCornerShape(20.dp))) {
+    Box(modifier = modifier.clip(RoundedCornerShape(24.dp))) {
         AndroidView(
             factory = {
                 mapView.apply {
                     getMapAsync { mapLibre ->
-                        mapLibre.setStyle(AppConfig.mapStyleUrl)
+                        mapLibre.setStyle(Style.Builder().fromJson(OsmStyle.JSON))
                         mapLibre.uiSettings.isCompassEnabled = false
                         mapLibre.uiSettings.isLogoEnabled = false
                         mapLibre.uiSettings.isAttributionEnabled = false
+                        // Sensible starting camera so the user sees Madrid immediately,
+                        // before the first place query resolves.
+                        mapLibre.moveCamera(
+                            CameraUpdateFactory.newLatLngZoom(
+                                LatLng(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG),
+                                12.5,
+                            )
+                        )
                         map = mapLibre
                     }
                 }
@@ -75,7 +85,7 @@ fun NearbyMap(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(10.dp)
-                .background(BgDeep.copy(alpha = 0.74f), RoundedCornerShape(8.dp))
+                .background(BgDeep.copy(alpha = 0.66f), RoundedCornerShape(8.dp))
                 .padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
@@ -83,23 +93,12 @@ fun NearbyMap(
     LaunchedEffect(map, state.origin, state.places, selectedPlaceId) {
         map?.let {
             it.setOnMarkerClickListener { marker ->
-                val place = state.places.firstOrNull { place -> place.id == marker.snippet }
-                if (place != null) {
-                    onPlaceSelected(place)
-                    true
-                } else {
-                    false
-                }
+                val place = state.places.firstOrNull { p -> p.id == marker.snippet }
+                if (place != null) { onPlaceSelected(place); true } else false
             }
-            updateMarkers(
-                context = context,
-                map = it,
-                state = state,
-                selectedPlaceId = selectedPlaceId,
-            )
+            updateMarkers(context, it, state, selectedPlaceId)
         }
     }
-
 }
 
 @Composable
@@ -119,14 +118,12 @@ private fun rememberMapViewWithLifecycle(): MapView {
                 else -> Unit
             }
         }
-
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
             mapView.onDestroy()
         }
     }
-
     return mapView
 }
 
@@ -144,7 +141,7 @@ private fun updateMarkers(
         MarkerOptions()
             .position(origin)
             .title("You are here")
-            .icon(iconFactory.fromBitmap(dotBitmap(Color.rgb(92, 197, 255), 34, stroke = true)))
+            .icon(iconFactory.fromBitmap(dotBitmap(Color.rgb(124, 231, 178), 38, stroke = true)))
     )
 
     state.places.forEach { place ->
@@ -188,6 +185,5 @@ private fun dotBitmap(color: Int, size: Int, stroke: Boolean): Bitmap {
         paint.color = Color.argb(72, Color.red(color), Color.green(color), Color.blue(color))
         canvas.drawCircle(radius, radius, radius * 0.48f, paint)
     }
-
     return bitmap
 }

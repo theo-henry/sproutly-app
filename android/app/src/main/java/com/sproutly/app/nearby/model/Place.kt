@@ -29,6 +29,12 @@ data class Place(
     val confidence: Double = 0.7,
 )
 
+/**
+ * Mirrors the user's `diet_preference` from `profiles`. Controls how strict the
+ * OSM search/filter is about vegan/vegetarian tagging.
+ */
+enum class DietFocus { VEGAN, VEGETARIAN, FLEXIBLE }
+
 data class NearbyFilters(
     val fullyPlantBased: Boolean = false,
     val plantFriendly: Boolean = false,
@@ -36,4 +42,5 @@ data class NearbyFilters(
     val restaurants: Boolean = false,
     val openNow: Boolean = false,
     val maxDistanceKm: Double = 5.0,
+    val dietFocus: DietFocus = DietFocus.VEGETARIAN,
 )

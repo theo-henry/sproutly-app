@@ -13,6 +13,12 @@ The website should centralize the daily workflows a plant-based user needs:
 
 The product should feel practical, trustworthy, and easy to use. It should help users decide what to buy, where to eat or shop, and what to cook without needing to jump between disconnected apps.
 
+## Active Workspace
+
+**All current development happens inside `android/`** — the native Kotlin + Jetpack Compose Android app. The user builds it in Android Studio. The React/Vite web app at the repo root is the prior version and is frozen; do not edit `src/`, `index.html`, `package.json`, `vite.config.ts`, `supabase/`, etc. unless explicitly asked.
+
+Default any new code, refactors, and feature work to `android/app/src/main/java/com/sproutly/app/...`. The module layout and dependency choices are documented in `android/README.md`.
+
 ## Project Memory Protocol
 
 From now on, whenever the user corrects the assistant or says to remember something about this project, save it as its own `.md` file inside a `memory/` folder at the root of this workspace.

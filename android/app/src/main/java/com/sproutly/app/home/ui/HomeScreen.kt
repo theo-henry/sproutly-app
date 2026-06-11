@@ -1,7 +1,9 @@
 package com.sproutly.app.home.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -12,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.sproutly.app.core.design.*
@@ -48,7 +51,7 @@ fun HomeScreen(
                 .padding(horizontal = 18.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            PlantHero(modifier = Modifier.fillMaxWidth())
+            HeroImagePlaceholder(modifier = Modifier.fillMaxWidth())
 
             SproutlyCard {
                 SectionLabel("Today")
@@ -93,6 +96,23 @@ fun HomeScreen(
 
             Spacer(Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+private fun HeroImagePlaceholder(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .height(220.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(BgElevated),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            "Hero image",
+            color = TextMuted,
+            style = MaterialTheme.typography.titleMedium,
+        )
     }
 }
 

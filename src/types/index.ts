@@ -13,13 +13,30 @@ export type Product = {
 export type Recipe = {
   id: string;
   title: string;
+  description: string;
   minutes: number;
+  prepMinutes: number;
+  cookMinutes: number;
   servings: number;
   kcal: number;
   proteinGrams: number;
+  carbsGrams: number;
+  fatGrams: number;
+  fiberGrams: number;
+  difficulty: "Easy" | "Medium";
+  mealType: "Breakfast" | "Lunch" | "Dinner" | "Snack";
   ingredients: string[];
   steps: string[];
   tags: string[];
+  dietLabels: (
+    | "Vegan"
+    | "Vegetarian"
+    | "Mostly plant-based"
+    | "Flexitarian"
+    | "Whole-food plant-based"
+  )[];
+  allergens: string[];
+  equipment: string[];
   imageUrl?: string;
 };
 

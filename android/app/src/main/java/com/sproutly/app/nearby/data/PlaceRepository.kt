@@ -60,7 +60,7 @@ class PlaceRepository(
     private suspend fun requestDeviceLocation(): Location? {
         val client = LocationServices.getFusedLocationProviderClient(context)
         return client.lastLocation.awaitNullable()
-            ?: client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).awaitNullable()
+            ?: client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).awaitNullable()
     }
 }
 

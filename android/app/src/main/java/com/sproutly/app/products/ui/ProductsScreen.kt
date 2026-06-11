@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,6 +63,11 @@ fun ProductsScreen(
 
     Scaffold(
         containerColor = BgDeep,
+        // System bar insets are already consumed by the outer SignedInGraph
+        // Scaffold (see AppNavGraph.consumeWindowInsets). Re-applying them here
+        // would double-pad the content area, on some screens pushing the
+        // bottom of the tappable region behind the system bottom nav bar.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
             TopAppBar(
                 title = { Text("Products", fontWeight = FontWeight.SemiBold) },

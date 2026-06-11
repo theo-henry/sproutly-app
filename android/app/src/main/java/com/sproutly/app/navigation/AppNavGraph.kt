@@ -1,6 +1,8 @@
 package com.sproutly.app.navigation
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
@@ -13,17 +15,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.sproutly.app.auth.AuthState
 import com.sproutly.app.auth.AuthViewModel
 import com.sproutly.app.auth.ui.LoginScreen
@@ -57,15 +58,29 @@ private fun SplashLoading() {
     }
 }
 
+/**
+ * Nearby destination accepts two optional URL args so we don't have to hoist
+ * mutable state into SignedInGraph (state hoisted up here would cause the
+ * entire signed-in tree — and every destination composable — to recompose any
+ * time we pass a cross-screen hint, which made click lambdas race against
+ * NavHost re-evaluation).
+ */
+private const val NEARBY_ROUTE =
+    "${Routes.NEARBY}?fromProducts={fromProducts}&storeHint={storeHint}"
+
+private fun nearbyDeepLink(fromProducts: Boolean, storeHint: String?): String {
+    val encoded = storeHint?.let { Uri.encode(it) }.orEmpty()
+    return "${Routes.NEARBY}?fromProducts=$fromProducts&storeHint=$encoded"
+}
+
 @Composable
 private fun SignedInGraph(onSignOut: () -> Unit) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
-    var nearbyFromProducts by remember { mutableStateOf(false) }
-    var nearbyStoreHint by remember { mutableStateOf<String?>(null) }
 
-    val showBottomBar = currentRoute in bottomNavItems.map { it.route }
+    val showBottomBar = currentRoute in bottomNavItems.map { it.route } ||
+        currentRoute?.startsWith(Routes.NEARBY) == true
 
     Scaffold(
         containerColor = BgDeep,
@@ -73,20 +88,18 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
             if (showBottomBar) {
                 NavigationBar(containerColor = BgSurface, tonalElevation = 0.dp) {
                     bottomNavItems.forEach { item ->
-                        val selected = currentRoute == item.route
+                        val selected = currentRoute?.startsWith(item.route) == true
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                if (item.route == Routes.NEARBY) {
-                                    nearbyFromProducts = false
-                                    nearbyStoreHint = null
-                                }
-                                navController.navigate(item.route) {
+                                val target = if (item.route == Routes.NEARBY) {
+                                    nearbyDeepLink(fromProducts = false, storeHint = null)
+                                } else item.route
+                                navController.navigate(target) {
                                     popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                        saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { Icon(item.icon, contentDescription = item.label) },
@@ -107,31 +120,46 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier
+                .padding(padding)
+                .consumeWindowInsets(padding)
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
                     onOpenAccount = { navController.navigate(Routes.ACCOUNT) },
                     onOpenScanner = { navController.navigate(Routes.SCANNER) },
-                    onOpenNearby = { navController.navigate(Routes.NEARBY) },
+                    onOpenNearby = {
+                        navController.navigate(nearbyDeepLink(false, null))
+                    },
                 )
             }
             composable(Routes.PRODUCTS) {
                 ProductsScreen(
                     onOpenScanner = { navController.navigate(Routes.SCANNER) },
                     onOpenNearbyStore = { storeName ->
-                        nearbyFromProducts = true
-                        nearbyStoreHint = storeName
-                        navController.navigate(Routes.NEARBY) {
-                            launchSingleTop = true
-                        }
+                        navController.navigate(nearbyDeepLink(true, storeName))
                     },
                 )
             }
-            composable(Routes.NEARBY) {
+            composable(
+                route = NEARBY_ROUTE,
+                arguments = listOf(
+                    navArgument("fromProducts") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                    navArgument("storeHint") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+            ) { entry ->
+                val fromProducts = entry.arguments?.getBoolean("fromProducts") ?: false
+                val rawHint = entry.arguments?.getString("storeHint")
                 NearbyScreen(
-                    initialSupermarketMode = nearbyFromProducts,
-                    productStoreHint = nearbyStoreHint,
+                    initialSupermarketMode = fromProducts,
+                    productStoreHint = rawHint?.takeIf { it.isNotBlank() },
                 )
             }
             composable(Routes.RECIPES) {
@@ -149,3 +177,4 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
         }
     }
 }
+

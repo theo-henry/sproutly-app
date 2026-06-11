@@ -25,6 +25,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -51,6 +52,7 @@ import com.sproutly.app.nearby.model.LocationSource
 import com.sproutly.app.nearby.model.NearbyFilters
 import com.sproutly.app.nearby.model.Place
 import com.sproutly.app.nearby.model.PlaceKind
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,8 +64,19 @@ fun NearbyScreen(
     val state by viewModel.state.collectAsState()
     val context = LocalContext.current
     var selectedPlaceId by rememberSaveable { mutableStateOf<String?>(null) }
+    var showFallbackNotice by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val selectedPlace = state.places.firstOrNull { it.id == selectedPlaceId }
+
+    LaunchedEffect(state.fallbackNoticeId, state.locationSource) {
+        if (state.fallbackNoticeId > 0 && state.locationSource == LocationSource.MADRID_FALLBACK) {
+            showFallbackNotice = true
+            delay(4_000)
+            showFallbackNotice = false
+        } else {
+            showFallbackNotice = false
+        }
+    }
 
     LaunchedEffect(selectedPlaceId) {
         if (selectedPlaceId != null && scrollState.value > 0) {
@@ -139,13 +152,19 @@ fun NearbyScreen(
                     },
                     modifier = Modifier.align(Alignment.TopEnd).padding(12.dp),
                 )
-                if (state.loading) {
-                    LinearProgressIndicator(
+                if (showFallbackNotice) {
+                    FallbackLocationNotice(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth(),
-                        color = LeafMint,
-                        trackColor = Color.Transparent,
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .padding(top = 58.dp, start = 12.dp, end = 12.dp),
+                    )
+                }
+                if (state.loading) {
+                    MapLoadingOverlay(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 24.dp),
                     )
                 }
                 if (selectedPlace != null) {
@@ -246,6 +265,68 @@ private fun MapHeaderChip(state: NearbyUiState, modifier: Modifier = Modifier) {
             Text(location, color = TextPrimary, style = MaterialTheme.typography.labelMedium)
             Text("·", color = TextMuted, style = MaterialTheme.typography.labelMedium)
             Text(diet, color = LeafMint, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+@Composable
+private fun FallbackLocationNotice(modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = BgDeep.copy(alpha = 0.92f),
+        modifier = modifier.border(1.dp, Divider, RoundedCornerShape(18.dp)),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+        ) {
+            Icon(
+                Icons.Outlined.LocationOn,
+                contentDescription = null,
+                tint = LeafMint,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                "Couldn't get your exact location. Showing central Madrid.",
+                color = TextPrimary,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MapLoadingOverlay(modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = BgDeep.copy(alpha = 0.9f),
+        modifier = modifier.border(1.dp, Divider, RoundedCornerShape(18.dp)),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            CircularProgressIndicator(
+                color = LeafMint,
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(24.dp),
+            )
+            Column {
+                Text(
+                    "Gathering nearby data",
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "Finding places to show on the map.",
+                    color = TextMuted,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
         }
     }
 }

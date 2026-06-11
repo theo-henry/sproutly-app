@@ -24,6 +24,7 @@ data class NearbyUiState(
     val origin: GeoPoint = GeoPoint(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG),
     val locationSource: LocationSource = LocationSource.MADRID_FALLBACK,
     val loading: Boolean = false,
+    val fallbackNoticeId: Int = 0,
     val requestingLocationPermission: Boolean = false,
     val error: String? = null,
     val dietPreferenceLabel: String? = null,
@@ -104,6 +105,11 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
             val deviceLocation = if (useDeviceLocation) repo.currentLocation() else null
             val origin = deviceLocation ?: GeoPoint(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG)
             val source = if (deviceLocation != null) LocationSource.DEVICE else LocationSource.MADRID_FALLBACK
+            val fallbackNoticeId = if (useDeviceLocation && deviceLocation == null) {
+                _state.value.fallbackNoticeId + 1
+            } else {
+                _state.value.fallbackNoticeId
+            }
 
             try {
                 val places = repo.nearby(origin, _state.value.filters)
@@ -112,6 +118,7 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
                     origin = origin,
                     locationSource = source,
                     loading = false,
+                    fallbackNoticeId = fallbackNoticeId,
                     error = null,
                 )
             } catch (error: Exception) {
@@ -120,6 +127,7 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
                     origin = origin,
                     locationSource = source,
                     loading = false,
+                    fallbackNoticeId = fallbackNoticeId,
                     error = error.message ?: "Could not load nearby places.",
                 )
             }

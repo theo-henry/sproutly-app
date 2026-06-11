@@ -18,7 +18,7 @@ fun localOrEnv(key: String, default: String = ""): String =
 
 android {
     namespace = "com.sproutly.app"
-    compileSdk = 36
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.sproutly.app"
@@ -82,7 +82,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
-    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:3.6.0")
+    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:3.1.0")
     implementation(supabaseBom)
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")

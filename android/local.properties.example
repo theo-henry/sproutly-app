@@ -9,5 +9,7 @@ SUPABASE_ANON_KEY=YOUR_ANON_KEY
 DEMO_EMAIL=demo@sproutly.app
 DEMO_PASSWORD=demo-password
 
-# Optional: Google Maps API key for native map (Nearby tab).
-GOOGLE_MAPS_API_KEY=
+# Optional map/search overrides. Defaults use MapLibre demo style + public Overpass.
+# For production, use your own tile/style provider and preferably proxy/cache OSM search.
+MAP_STYLE_URL=https://demotiles.maplibre.org/style.json
+OVERPASS_ENDPOINT=https://overpass-api.de/api/interpreter

@@ -43,7 +43,10 @@ class MealPlanRepository {
         val userId = client.auth.currentUserOrNull()?.id
             ?: error("Not signed in")
         val payload = Row(userId = userId, weekStart = plan.weekStartISO, days = plan.days)
-        table.upsert(payload, onConflict = "user_id,week_start") { select() }.decodeSingle<Row>()
+        table.upsert(payload) {
+            onConflict = "user_id,week_start"
+            select()
+        }.decodeSingle<Row>()
         plan
     }.fold(
         onSuccess = { AppResult.Success(it) },

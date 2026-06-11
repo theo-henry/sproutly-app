@@ -33,7 +33,8 @@ android {
         buildConfigField("String", "DEMO_EMAIL", "\"${localOrEnv("DEMO_EMAIL", "demo@sproutly.app")}\"")
         buildConfigField("String", "DEMO_PASSWORD", "\"${localOrEnv("DEMO_PASSWORD", "demo-password")}\"")
 
-        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = localOrEnv("GOOGLE_MAPS_API_KEY", "")
+        buildConfigField("String", "MAP_STYLE_URL", "\"${localOrEnv("MAP_STYLE_URL", "https://demotiles.maplibre.org/style.json")}\"")
+        buildConfigField("String", "OVERPASS_ENDPOINT", "\"${localOrEnv("OVERPASS_ENDPOINT", "https://overpass-api.de/api/interpreter")}\"")
     }
 
     buildTypes {
@@ -81,7 +82,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
-    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:2.6.1")
+    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:3.0.0")
     implementation(supabaseBom)
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
@@ -95,9 +96,8 @@ dependencies {
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
 
-    // Maps + location (future map)
-    implementation("com.google.maps.android:maps-compose:6.1.0")
-    implementation("com.google.android.gms:play-services-maps:19.0.0")
+    // MapLibre + location for OSM-based nearby discovery
+    implementation("org.maplibre.gl:android-sdk:11.8.0")
     implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Camera + ML Kit (scanner)

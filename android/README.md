@@ -10,7 +10,7 @@ the React/Vite web app at the repo root; both can coexist.
 - Navigation Compose, ViewModel, Coroutines, Flow
 - Supabase Kotlin SDK (Auth, Postgrest, Storage, Realtime) over Ktor OkHttp
 - Coil for remote images, DataStore for prefs, Room scaffolded for future offline cache
-- Google Maps Compose + Play Services Location (placeholders wired)
+- MapLibre Native + OpenStreetMap/Overpass + Play Services Location
 - CameraX + ML Kit Barcode Scanning (placeholders wired)
 - WorkManager (scaffolded for reminders)
 
@@ -21,7 +21,7 @@ the React/Vite web app at the repo root; both can coexist.
    - `sdk.dir` (Android Studio writes this on first sync)
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY` (from your Supabase project)
    - `DEMO_EMAIL`, `DEMO_PASSWORD` (must exist in your Supabase auth users)
-   - `GOOGLE_MAPS_API_KEY` (optional — for native map view)
+   - `MAP_STYLE_URL`, `OVERPASS_ENDPOINT` are optional map/search overrides
 3. Sync Gradle, then **Run ▶** on an emulator or device (minSdk 26).
 
 The values in `local.properties` are read at build time and emitted as
@@ -65,8 +65,8 @@ These are wired with interfaces and TODOs so they can be filled in without
 restructuring:
 
 - **Scanner** — CameraX preview + ML Kit analyzer not yet bound (just permission flow).
-- **Nearby map** — Google Maps Compose dependency is in, but the screen shows a
-  styled placeholder until an API key is configured.
+- **Nearby map** — MapLibre renders an OpenStreetMap-backed map. The screen
+  requests device location and falls back to central Madrid for the MVP.
 - **AI** — `AiRepository` is an interface only. **Do not** add Gemini keys to the
   Android client; implement against a Supabase Edge Function and inject that
   impl in `SproutlyApp.onCreate()`.

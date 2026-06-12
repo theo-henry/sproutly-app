@@ -52,6 +52,7 @@ data class Recipe(
     val steps: List<String>,
     val allergens: List<String> = emptyList(),
     val equipment: List<String> = emptyList(),
+    val imageResId: Int? = null,
     val imageUrl: String? = null,
 ) {
     val totalMinutes: Int get() = prepMinutes + cookMinutes

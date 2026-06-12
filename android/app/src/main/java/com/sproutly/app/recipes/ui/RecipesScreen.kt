@@ -440,22 +440,27 @@ private fun RecipeDetailSheet(
 
 @Composable
 private fun RecipeImage(recipe: Recipe, modifier: Modifier = Modifier, fallbackLabel: String) {
+    val imageModel = recipe.imageResId ?: recipe.imageUrl
+
     Box(
         modifier = modifier.background(BgElevated),
         contentAlignment = Alignment.Center,
     ) {
-        AsyncImage(
-            model = recipe.imageUrl,
-            contentDescription = recipe.title,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-        Text(
-            fallbackLabel,
-            color = TextMuted.copy(alpha = 0.36f),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Black,
-        )
+        if (imageModel != null) {
+            AsyncImage(
+                model = imageModel,
+                contentDescription = recipe.title,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        } else {
+            Text(
+                fallbackLabel,
+                color = TextMuted.copy(alpha = 0.36f),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Black,
+            )
+        }
         Box(
             modifier = Modifier
                 .matchParentSize()

@@ -21,3 +21,4 @@
 - [x] Persist weekly meal plans per Supabase user with RLS-backed schema.
 - [x] Fix native Android auth startup so Supabase refresh failures cannot leave the app on an infinite loading screen.
 - [x] Make Try the demo open a local vegetarian demo account without Supabase login.
+- [x] Redesign the Android home screen as an editorial dashboard pulling today's meals, featured recipe, and cross-tab teasers — no more hero placeholder.

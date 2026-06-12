@@ -131,6 +131,19 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
                     onOpenNearby = {
                         navController.navigate(nearbyDeepLink(false, null))
                     },
+                    onOpenProducts = {
+                        navController.navigate(Routes.PRODUCTS) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenRecipes = {
+                        navController.navigate(Routes.RECIPES) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onOpenMealPlan = { navController.navigate(Routes.MEAL_PLAN) },
                 )
             }
             composable(Routes.PRODUCTS) {

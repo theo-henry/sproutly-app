@@ -26,6 +26,7 @@ fun MealPlanScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val message by viewModel.message.collectAsState()
+    val generating by viewModel.generating.collectAsState()
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) {
@@ -41,7 +42,7 @@ fun MealPlanScreen(
                     IconButton(onClick = onBack) { Icon(Icons.Outlined.ArrowBack, contentDescription = "Back") }
                 },
                 actions = {
-                    IconButton(onClick = viewModel::generateStarter) {
+                    IconButton(onClick = viewModel::requestGeneratedPlan, enabled = !generating) {
                         Icon(Icons.Outlined.AutoAwesome, contentDescription = "Generate", tint = LeafMint)
                     }
                 },
@@ -73,6 +74,28 @@ fun MealPlanScreen(
                             color = TextMuted,
                             style = MaterialTheme.typography.labelLarge
                         )
+                    }
+                    item {
+                        SproutlyCard(accent = true) {
+                            Text(
+                                "Generate and email plan",
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                "Uses your saved diet preference and tags, saves the latest plan to your account, and emails it through the connected Google Apps Script workflow.",
+                                color = TextMuted,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Spacer(Modifier.height(14.dp))
+                            MintPillButton(
+                                label = if (generating) "Generating..." else "Generate a Meal Plan",
+                                onClick = viewModel::requestGeneratedPlan,
+                                enabled = !generating,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
                     }
                     items(plan.days.withIndex().toList()) { (idx, day) ->
                         SproutlyCard {

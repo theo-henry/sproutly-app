@@ -24,6 +24,9 @@ class MealPlanViewModel(
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
 
+    private val _generating = MutableStateFlow(false)
+    val generating: StateFlow<Boolean> = _generating.asStateFlow()
+
     init { load() }
 
     fun load() {
@@ -37,8 +40,23 @@ class MealPlanViewModel(
         }
     }
 
-    fun generateStarter() {
-        _state.value = UiState.Success(MealPlanFactory.starterPlan())
+    fun requestGeneratedPlan() {
+        if (_generating.value) return
+        viewModelScope.launch {
+            _generating.value = true
+            val weekStart = when (val current = state.value) {
+                is UiState.Success -> current.data.weekStartISO
+                else -> MealPlanFactory.currentMonday().toString()
+            }
+            when (val r = repo.requestGeneratedPlan(weekStart)) {
+                is AppResult.Success -> {
+                    _state.value = UiState.Success(r.data)
+                    _message.value = "Meal plan generated, saved, and emailed."
+                }
+                is AppResult.Failure -> _message.value = "Request failed: ${r.message}"
+            }
+            _generating.value = false
+        }
     }
 
     fun updateMeal(dayIndex: Int, slot: MealSlot, text: String) {

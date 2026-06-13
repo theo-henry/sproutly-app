@@ -6,6 +6,9 @@ import com.sproutly.app.auth.data.DemoAccountStore
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
 import com.sproutly.app.core.result.UiState
+import com.sproutly.app.mealplan.data.MealPlanRepository
+import com.sproutly.app.mealplan.model.MealPlan
+import com.sproutly.app.mealplan.model.MealPlanFactory
 import com.sproutly.app.profile.data.ProfileRepository
 import com.sproutly.app.profile.model.Profile
 import io.github.jan.supabase.auth.auth
@@ -16,6 +19,7 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val repo: ProfileRepository = ProfileRepository(),
+    private val mealPlanRepo: MealPlanRepository = MealPlanRepository(),
 ) : ViewModel() {
 
     private val _state = MutableStateFlow<UiState<Profile>>(UiState.Loading)
@@ -24,7 +28,13 @@ class ProfileViewModel(
     private val _savedMessage = MutableStateFlow<String?>(null)
     val savedMessage: StateFlow<String?> = _savedMessage.asStateFlow()
 
-    init { load() }
+    private val _mealPlan = MutableStateFlow<UiState<MealPlan?>>(UiState.Loading)
+    val mealPlan: StateFlow<UiState<MealPlan?>> = _mealPlan.asStateFlow()
+
+    init {
+        load()
+        loadMealPlan()
+    }
 
     fun load() {
         viewModelScope.launch {
@@ -35,6 +45,17 @@ class ProfileViewModel(
                     _state.value = UiState.Success(profile)
                 }
                 is AppResult.Failure -> _state.value = UiState.Error(r.message)
+            }
+        }
+    }
+
+    fun loadMealPlan() {
+        viewModelScope.launch {
+            _mealPlan.value = UiState.Loading
+            val weekStart = MealPlanFactory.currentMonday().toString()
+            when (val r = mealPlanRepo.getForWeek(weekStart)) {
+                is AppResult.Success -> _mealPlan.value = UiState.Success(r.data)
+                is AppResult.Failure -> _mealPlan.value = UiState.Error(r.message)
             }
         }
     }

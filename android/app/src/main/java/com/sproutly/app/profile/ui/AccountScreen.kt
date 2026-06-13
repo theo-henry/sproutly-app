@@ -22,19 +22,24 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.sproutly.app.core.design.*
 import com.sproutly.app.core.result.UiState
+import com.sproutly.app.mealplan.model.MealPlan
 import com.sproutly.app.profile.ProfileViewModel
 import com.sproutly.app.profile.model.DietPreference
 import com.sproutly.app.profile.model.DietTags
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountScreen(
     onBack: () -> Unit,
     onSignOut: () -> Unit,
+    onOpenMealPlan: () -> Unit,
     viewModel: ProfileViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val mealPlanState by viewModel.mealPlan.collectAsState()
     val saved by viewModel.savedMessage.collectAsState()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -118,6 +123,12 @@ fun AccountScreen(
                         }
                     }
 
+                    MealPlanSummaryCard(
+                        mealPlanState = mealPlanState,
+                        onOpenMealPlan = onOpenMealPlan,
+                        onRefresh = viewModel::loadMealPlan,
+                    )
+
                     SproutlyCard {
                         SectionLabel("Display")
                         Spacer(Modifier.height(8.dp))
@@ -172,6 +183,77 @@ fun AccountScreen(
 }
 
 @Composable
+private fun MealPlanSummaryCard(
+    mealPlanState: UiState<MealPlan?>,
+    onOpenMealPlan: () -> Unit,
+    onRefresh: () -> Unit,
+) {
+    SproutlyCard(accent = true) {
+        SectionLabel("Meal plan")
+        Spacer(Modifier.height(8.dp))
+        when (mealPlanState) {
+            UiState.Loading -> {
+                Text("Loading your latest generated plan...", color = TextMuted)
+            }
+            is UiState.Error -> {
+                Text("Could not load your meal plan.", color = TextMuted)
+                Spacer(Modifier.height(12.dp))
+                GhostButton("Refresh", onClick = onRefresh, modifier = Modifier.fillMaxWidth())
+            }
+            UiState.Empty -> {
+                EmptyMealPlan(onOpenMealPlan)
+            }
+            is UiState.Success -> {
+                val plan = mealPlanState.data
+                if (plan == null || plan.days.all { it.meals.isEmpty() }) {
+                    EmptyMealPlan(onOpenMealPlan)
+                } else {
+                    Text(
+                        "Week of ${formatProfileDate(plan.weekStartISO)}",
+                        color = TextPrimary,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    plan.days.forEach { day ->
+                        val meals = listOf("breakfast", "lunch", "dinner", "snack")
+                            .mapNotNull { slot ->
+                                day.meals[slot]?.takeIf { it.isNotBlank() }?.let { meal ->
+                                    "${slot.replaceFirstChar { it.uppercase() }}: $meal"
+                                }
+                            }
+                            .joinToString(" - ")
+                        if (meals.isNotBlank()) {
+                            Text(
+                                formatProfileDate(day.date),
+                                color = TextPrimary,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                            Text(
+                                meals,
+                                color = TextMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        GhostButton("Refresh", onClick = onRefresh, modifier = Modifier.weight(1f))
+                        MintPillButton("Open planner", onClick = onOpenMealPlan, modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EmptyMealPlan(onOpenMealPlan: () -> Unit) {
+    Text("No generated plan is saved for this week yet.", color = TextMuted)
+    Spacer(Modifier.height(12.dp))
+    MintPillButton("Generate a Meal Plan", onClick = onOpenMealPlan, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
 private fun Field(label: String, value: String, onChange: (String) -> Unit) {
     OutlinedTextField(
         value = value,
@@ -190,6 +272,9 @@ private fun Field(label: String, value: String, onChange: (String) -> Unit) {
         )
     )
 }
+
+private fun formatProfileDate(iso: String): String =
+    runCatching { LocalDate.parse(iso).format(DateTimeFormatter.ofPattern("EEE d MMM")) }.getOrDefault(iso)
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable

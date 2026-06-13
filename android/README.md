@@ -59,6 +59,32 @@ Uses the existing Supabase schema (`profiles`, `meal_plans` with unique
 `(user_id, week_start)`) and an `avatars` storage bucket with per-user folder
 write access.
 
+## Google Apps Script meal-plan email
+
+The Android app calls the `request-meal-plan` Supabase Edge Function when a user
+taps **Generate a Meal Plan**. The function reads the signed-in user's profile,
+builds a weekly plan from their diet preference and tags, upserts that plan into
+`meal_plans`, and sends the formatted plan to the configured Google Apps Script
+email endpoint.
+
+Set this up after applying the Supabase migrations:
+
+1. Save the Google Apps Script endpoint and shared secret as Supabase secrets:
+   ```bash
+   supabase secrets set GOOGLE_APPS_SCRIPT_EMAIL_URL="https://script.google.com/macros/s/.../exec"
+   supabase secrets set GOOGLE_APPS_SCRIPT_SECRET="your-shared-secret"
+   ```
+2. Deploy the Edge Function:
+   ```bash
+   supabase functions deploy request-meal-plan
+   ```
+3. Test by signing in as a real Supabase user and tapping **Generate a Meal Plan**
+   in Android.
+
+Every generate tap saves the newest plan for that user/week and sends a fresh
+email. Because `meal_plans` has a unique `(user_id, week_start)` constraint, a
+second generation for the same week replaces the previous in-app plan.
+
 ## What's intentionally placeholder
 
 These are wired with interfaces and TODOs so they can be filled in without

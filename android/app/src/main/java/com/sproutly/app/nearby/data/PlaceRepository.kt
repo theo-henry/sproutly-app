@@ -8,6 +8,7 @@ import android.location.Location
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import com.google.android.gms.tasks.Task
 import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.nearby.model.DietFocus
@@ -18,6 +19,7 @@ import com.sproutly.app.nearby.model.PlaceKind
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.IOException
@@ -38,7 +40,10 @@ class PlaceRepository(
 ) {
     suspend fun currentLocation(): GeoPoint? {
         if (!hasLocationPermission()) return null
-        return requestDeviceLocation()?.let { GeoPoint(it.latitude, it.longitude) }
+        // Cap the whole lookup so a stuck GPS fix can't block the Madrid fallback.
+        return withTimeoutOrNull(LOCATION_TIMEOUT_MS) {
+            requestDeviceLocation()?.let { GeoPoint(it.latitude, it.longitude) }
+        }
     }
 
     suspend fun nearby(
@@ -59,8 +64,20 @@ class PlaceRepository(
     @SuppressLint("MissingPermission")
     private suspend fun requestDeviceLocation(): Location? {
         val client = LocationServices.getFusedLocationProviderClient(context)
-        return client.lastLocation.awaitNullable()
-            ?: client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).awaitNullable()
+        client.lastLocation.awaitNullable()?.let { return it }
+        // Use a real CancellationTokenSource so the Task is cancellable when the
+        // surrounding withTimeoutOrNull trips — passing null here leaks the request.
+        val tokenSource = CancellationTokenSource()
+        return try {
+            client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, tokenSource.token)
+                .awaitNullable()
+        } finally {
+            tokenSource.cancel()
+        }
+    }
+
+    private companion object {
+        const val LOCATION_TIMEOUT_MS = 6_000L
     }
 }
 

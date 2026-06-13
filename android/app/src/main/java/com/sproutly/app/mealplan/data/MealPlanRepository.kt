@@ -1,12 +1,24 @@
 package com.sproutly.app.mealplan.data
 
 import com.sproutly.app.auth.data.DemoAccountStore
+import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.core.network.SupabaseClientProvider
 import com.sproutly.app.core.result.AppResult
 import com.sproutly.app.mealplan.model.MealPlan
 import com.sproutly.app.mealplan.model.MealPlanFactory
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.statement.bodyAsText
+import io.ktor.client.request.header
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
+import io.ktor.http.isSuccess
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -14,6 +26,7 @@ import kotlinx.serialization.json.Json
 class MealPlanRepository {
     private val client get() = SupabaseClientProvider.client
     private val table get() = client.postgrest.from("meal_plans")
+    private val http = HttpClient(OkHttp)
     private val json = Json { ignoreUnknownKeys = true }
 
     @Serializable
@@ -23,6 +36,14 @@ class MealPlanRepository {
         @SerialName("week_start") val weekStart: String,
         val days: List<com.sproutly.app.mealplan.model.MealPlanDay>,
     )
+
+    @Serializable
+    private data class GenerateRequest(
+        @SerialName("week_start") val weekStart: String,
+    )
+
+    @Serializable
+    private data class ErrorResponse(val error: String? = null)
 
     suspend fun getForWeek(weekStartISO: String): AppResult<MealPlan?> = runCatching {
         if (DemoAccountStore.isEnabled()) return AppResult.Success(DemoAccountStore.getMealPlan(weekStartISO))
@@ -54,6 +75,31 @@ class MealPlanRepository {
     }.fold(
         onSuccess = { AppResult.Success(it) },
         onFailure = { AppResult.Failure(it.message ?: "Failed to save meal plan", it) }
+    )
+
+    suspend fun requestGeneratedPlan(weekStartISO: String): AppResult<MealPlan> = runCatching {
+        if (DemoAccountStore.isEnabled()) error("Email meal plan generation is unavailable in demo mode.")
+        val accessToken = client.auth.currentAccessTokenOrNull() ?: error("Not signed in")
+        val functionUrl = "${AppConfig.supabaseUrl.trimEnd('/')}/functions/v1/request-meal-plan"
+        val response = http.post(functionUrl) {
+            header(HttpHeaders.Authorization, "Bearer $accessToken")
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(GenerateRequest(weekStartISO)))
+        }
+
+        if (!response.status.isSuccess()) {
+            val body = runCatching { response.bodyAsText() }.getOrNull()
+            val message = body
+                ?.let { runCatching { json.decodeFromString<ErrorResponse>(it).error }.getOrNull() }
+                ?: body
+                ?: "Meal plan generation request failed."
+            error(message)
+        }
+
+        json.decodeFromString<MealPlan>(response.bodyAsText())
+    }.fold(
+        onSuccess = { AppResult.Success(it) },
+        onFailure = { AppResult.Failure(it.message ?: "Failed to request meal plan", it) }
     )
 
     suspend fun loadOrCreate(weekStartISO: String = MealPlanFactory.currentMonday().toString()): MealPlan =

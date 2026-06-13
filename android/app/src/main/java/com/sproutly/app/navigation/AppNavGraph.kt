@@ -182,7 +182,11 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
                 MealPlanScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.ACCOUNT) {
-                AccountScreen(onBack = { navController.popBackStack() }, onSignOut = onSignOut)
+                AccountScreen(
+                    onBack = { navController.popBackStack() },
+                    onSignOut = onSignOut,
+                    onOpenMealPlan = { navController.navigate(Routes.MEAL_PLAN) },
+                )
             }
             composable(Routes.SCANNER) {
                 ScannerScreen(onBack = { navController.popBackStack() })
@@ -190,4 +194,3 @@ private fun SignedInGraph(onSignOut: () -> Unit) {
         }
     }
 }
-

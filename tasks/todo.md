@@ -22,3 +22,7 @@
 - [x] Fix native Android auth startup so Supabase refresh failures cannot leave the app on an infinite loading screen.
 - [x] Make Try the demo open a local vegetarian demo account without Supabase login.
 - [x] Redesign the Android home screen as an editorial dashboard pulling today's meals, featured recipe, and cross-tab teasers — no more hero placeholder.
+- [ ] Replace procedural meal pools with `meal_catalog` + `meal_plan_templates` tables in Supabase and 12 curated templates.
+- [ ] Rewrite `request-meal-plan` edge function to randomly pick a template matching the user's diet preference and tags.
+- [ ] Deploy the migration + edge function and confirm the Apps Script email path still works end-to-end.
+- [ ] Delete the empty `supabase/functions/meal-plan-callback` directory.

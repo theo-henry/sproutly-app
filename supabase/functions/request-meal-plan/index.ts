@@ -238,23 +238,66 @@ Deno.serve(async (req) => {
   const displayName = profile?.display_name?.trim() || user.email.split("@")[0];
   const emailSubject = `Your Sproutly meal plan for the week of ${weekStart}`;
   const emailBody = formatMealPlanEmail(displayName, weekStart, days, profile ?? null, template.name);
-  const emailResponse = await fetch(appsScriptUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      secret: appsScriptSecret,
-      email: user.email,
-      to: user.email,
-      name: displayName,
-      week_start: weekStart,
-      subject: emailSubject,
-      body: emailBody,
-      meal_plan: emailBody,
-      meal_plan_json: { week_start: weekStart, days, template_id: template.id, template_name: template.name },
-    }),
-  });
+  const emailPayload = {
+    secret: appsScriptSecret,
+    email: user.email,
+    to: user.email,
+    name: displayName,
+    week_start: weekStart,
+    subject: emailSubject,
+    body: emailBody,
+    meal_plan: emailBody,
+    meal_plan_json: { week_start: weekStart, days, template_id: template.id, template_name: template.name },
+  };
+
+  // Google Apps Script Web Apps respond to POST with a 302 to script.googleusercontent.com.
+  // Deno's fetch follows redirects but converts POST to GET per WHATWG spec, which lands on
+  // doGet() instead of doPost(). To preserve doPost() handling, follow the redirect manually
+  // and re-POST the body to the final URL.
+  async function postFollowingRedirects(url: string, attemptsLeft = 4): Promise<Response> {
+    const res = await fetch(url, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(emailPayload),
+    });
+    if (res.status >= 300 && res.status < 400 && attemptsLeft > 0) {
+      const location = res.headers.get("location");
+      if (location) {
+        await res.body?.cancel();
+        return postFollowingRedirects(location, attemptsLeft - 1);
+      }
+    }
+    return res;
+  }
+
+  let emailResponse: Response;
+  try {
+    emailResponse = await postFollowingRedirects(appsScriptUrl);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return jsonResponse({
+      error: `Meal plan saved, but the email request failed: ${message}`,
+    }, 502);
+  }
+
   if (!emailResponse.ok) {
-    return jsonResponse({ error: "Meal plan saved, but the email could not be sent." }, 502);
+    const responseText = await emailResponse.text().catch(() => "");
+    const snippet = responseText.slice(0, 500);
+    return jsonResponse({
+      error: `Meal plan saved, but the email could not be sent (status ${emailResponse.status}). ${snippet}`.trim(),
+    }, 502);
+  }
+
+  // Apps Script sometimes returns 200 OK with an error message in the body.
+  const okBody = await emailResponse.text().catch(() => "");
+  if (okBody) {
+    const lower = okBody.toLowerCase();
+    if (lower.includes("error") || lower.includes("exception") || lower.includes("unauthorized")) {
+      return jsonResponse({
+        error: `Meal plan saved, but the email script reported: ${okBody.slice(0, 500)}`,
+      }, 502);
+    }
   }
 
   return jsonResponse({

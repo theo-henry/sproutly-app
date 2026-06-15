@@ -26,3 +26,4 @@
 - [ ] Rewrite `request-meal-plan` edge function to randomly pick a template matching the user's diet preference and tags.
 - [ ] Deploy the migration + edge function and confirm the Apps Script email path still works end-to-end.
 - [ ] Delete the empty `supabase/functions/meal-plan-callback` directory.
+- [x] Make Nearby resilient: fall back to Madrid + curated plant-based places when Overpass is unreachable, and harden the device-location lookup so it walks fused → balanced → platform LocationManager.

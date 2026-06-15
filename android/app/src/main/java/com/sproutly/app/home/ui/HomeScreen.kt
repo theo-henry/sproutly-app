@@ -16,12 +16,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.ArrowOutward
 import androidx.compose.material.icons.outlined.CalendarMonth
-import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingBag
-import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +33,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -109,9 +106,6 @@ fun HomeScreen(
                     onOpenPlan = onOpenMealPlan,
                 )
             }
-            Reveal(delayMillis = 140) {
-                PulseRow(meals = todayMeals)
-            }
             Reveal(delayMillis = 210) {
                 QuickActions(
                     onOpenScanner = onOpenScanner,
@@ -154,7 +148,6 @@ private fun HomeTopBar(onOpenAccount: () -> Unit) {
                 Text(
                     text = "sproutly",
                     color = TextPrimary,
-                    fontFamily = FontFamily.Serif,
                     fontWeight = FontWeight.Medium,
                     fontSize = 19.sp,
                     letterSpacing = (-0.4).sp,
@@ -207,7 +200,6 @@ private fun EditorialGreeting(greeting: String, date: LocalDate) {
             Text(
                 text = greeting + ".",
                 color = TextPrimary,
-                fontFamily = FontFamily.Serif,
                 fontWeight = FontWeight.Normal,
                 fontStyle = FontStyle.Italic,
                 fontSize = 34.sp,
@@ -292,7 +284,6 @@ private fun TodaysPlateCard(
                 Text(
                     "No meals planned yet.",
                     color = TextPrimary,
-                    fontFamily = FontFamily.Serif,
                     fontStyle = FontStyle.Italic,
                     fontSize = 22.sp,
                     lineHeight = 28.sp,
@@ -373,7 +364,6 @@ private fun PlateRow(slot: MealSlot, dish: String, isLast: Boolean) {
             Text(
                 dish.ifBlank { "—" },
                 color = TextPrimary,
-                fontFamily = FontFamily.Serif,
                 fontSize = 18.sp,
                 lineHeight = 22.sp,
                 fontWeight = FontWeight.Normal,
@@ -394,100 +384,6 @@ private fun PlateButton(label: String, onClick: () -> Unit) {
             .padding(horizontal = 18.dp, vertical = 12.dp),
     ) {
         Text(label, color = BgDeep, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-    }
-}
-
-// endregion
-
-// region — Pulse row
-
-@Composable
-private fun PulseRow(meals: List<Pair<MealSlot, String>>) {
-    val planned = meals.count { it.second.isNotBlank() }
-    val target = 3
-    val progress = (planned.toFloat() / target).coerceIn(0f, 1f)
-    val protein = planned * 22
-    val prep = planned * 15
-
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        PulseStat(
-            modifier = Modifier.weight(1f),
-            value = "$planned/$target",
-            label = "Meals set",
-            progress = progress,
-        )
-        PulseStat(
-            modifier = Modifier.weight(1f),
-            value = "${protein}g",
-            label = "Est. protein",
-            icon = Icons.Outlined.LocalFireDepartment,
-        )
-        PulseStat(
-            modifier = Modifier.weight(1f),
-            value = "${prep}m",
-            label = "Total prep",
-            icon = Icons.Outlined.Timer,
-        )
-    }
-}
-
-@Composable
-private fun PulseStat(
-    modifier: Modifier = Modifier,
-    value: String,
-    label: String,
-    progress: Float? = null,
-    icon: ImageVector? = null,
-) {
-    val shape = RoundedCornerShape(18.dp)
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .background(BgSurface)
-            .border(1.dp, Divider, shape)
-            .padding(14.dp),
-    ) {
-        if (icon != null) {
-            Icon(icon, contentDescription = null, tint = LeafMint, modifier = Modifier.size(16.dp))
-            Spacer(Modifier.height(10.dp))
-        }
-        Text(
-            value,
-            color = TextPrimary,
-            fontFamily = FontFamily.Serif,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Medium,
-        )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            label,
-            color = TextMuted,
-            fontSize = 11.sp,
-            letterSpacing = 0.4.sp,
-        )
-        if (progress != null) {
-            Spacer(Modifier.height(10.dp))
-            val animated by animateFloatAsState(
-                targetValue = progress,
-                animationSpec = tween(durationMillis = 700),
-                label = "pulse-progress",
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(50))
-                    .background(BgElevated),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(animated)
-                        .clip(RoundedCornerShape(50))
-                        .background(LeafMint)
-                )
-            }
-        }
     }
 }
 
@@ -653,7 +549,6 @@ private fun RecipeOfDay(recipe: Recipe, onOpen: () -> Unit) {
                 Text(
                     recipe.title,
                     color = Color.White,
-                    fontFamily = FontFamily.Serif,
                     fontSize = 22.sp,
                     lineHeight = 26.sp,
                     fontWeight = FontWeight.Medium,
@@ -766,7 +661,6 @@ private fun DiscoverTile(
             Text(
                 title,
                 color = TextPrimary,
-                fontFamily = FontFamily.Serif,
                 fontSize = 17.sp,
                 lineHeight = 22.sp,
                 fontWeight = FontWeight.Medium,
@@ -787,7 +681,6 @@ private fun SectionHeader(label: String, trailing: String? = null) {
         Text(
             label,
             color = TextPrimary,
-            fontFamily = FontFamily.Serif,
             fontSize = 18.sp,
             fontWeight = FontWeight.Medium,
         )

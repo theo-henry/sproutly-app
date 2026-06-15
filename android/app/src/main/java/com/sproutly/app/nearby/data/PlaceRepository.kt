@@ -174,9 +174,10 @@ class PlaceRepository(
     /**
      * Reject obviously-bogus fixes that emulators / passive providers love to
      * hand back: (0,0) sentinels, "accuracy worse than a small city" results,
-     * and Locations more than a day old. Without this filter the app honors
-     * a fake (0,0) Location, the map flies mid-ocean, and every curated
-     * Madrid place gets stripped by the distance filter.
+     * Locations more than a day old, and the Android emulator's default
+     * Googleplex/Mountain View coordinate. Without this filter the app honors
+     * fake defaults, the map flies away from Madrid, and every curated Madrid
+     * place gets stripped by the distance filter.
      */
     private fun Location.isUsable(label: String): Boolean {
         if (latitude == 0.0 && longitude == 0.0) {
@@ -185,6 +186,10 @@ class PlaceRepository(
         }
         if (latitude.isNaN() || longitude.isNaN()) {
             Log.d(TAG, "$label: rejected NaN coords")
+            return false
+        }
+        if (isLikelyAndroidEmulator() && isNearAndroidEmulatorDefault()) {
+            Log.d(TAG, "$label: rejected Android emulator default Mountain View location")
             return false
         }
         if (hasAccuracy() && accuracy > 5_000f) {
@@ -197,6 +202,30 @@ class PlaceRepository(
             return false
         }
         return true
+    }
+
+    private fun isLikelyAndroidEmulator(): Boolean {
+        val fingerprint = Build.FINGERPRINT.lowercase()
+        val model = Build.MODEL.lowercase()
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        val product = Build.PRODUCT.lowercase()
+        val hardware = Build.HARDWARE.lowercase()
+
+        return fingerprint.startsWith("generic") ||
+            fingerprint.contains("emulator") ||
+            model.contains("emulator") ||
+            model.contains("android sdk built for") ||
+            manufacturer.contains("genymotion") ||
+            product.contains("sdk_gphone") ||
+            product.contains("emulator") ||
+            hardware.contains("goldfish") ||
+            hardware.contains("ranchu")
+    }
+
+    private fun Location.isNearAndroidEmulatorDefault(): Boolean {
+        val here = GeoPoint(latitude, longitude)
+        val emulatorDefault = GeoPoint(ANDROID_EMULATOR_DEFAULT_LAT, ANDROID_EMULATOR_DEFAULT_LNG)
+        return distanceKm(here, emulatorDefault) <= ANDROID_EMULATOR_DEFAULT_RADIUS_KM
     }
 
     @SuppressLint("MissingPermission")
@@ -239,6 +268,9 @@ class PlaceRepository(
         const val MIN_RESULTS_BEFORE_EXPANDING = 5
         const val MIN_RADIUS_KM = 0.5
         const val EXPANDED_RADIUS_KM = 10.0
+        const val ANDROID_EMULATOR_DEFAULT_LAT = 37.4219999
+        const val ANDROID_EMULATOR_DEFAULT_LNG = -122.0840575
+        const val ANDROID_EMULATOR_DEFAULT_RADIUS_KM = 1.0
         const val TAG = "PlaceRepository"
     }
 }

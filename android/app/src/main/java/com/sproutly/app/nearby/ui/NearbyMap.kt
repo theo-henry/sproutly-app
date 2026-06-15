@@ -1,5 +1,7 @@
 package com.sproutly.app.nearby.ui
 
+import android.graphics.RectF
+import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -10,6 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,8 +31,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.sproutly.app.core.config.AppConfig
 import com.sproutly.app.core.design.BgDeep
 import com.sproutly.app.core.design.BgSurface
 import com.sproutly.app.core.design.Divider as DividerColor
@@ -31,10 +46,28 @@ import com.sproutly.app.core.design.LeafDeep
 import com.sproutly.app.core.design.LeafGreen
 import com.sproutly.app.core.design.LeafMint
 import com.sproutly.app.core.design.TextPrimary
+import com.sproutly.app.core.network.OsmStyle
 import com.sproutly.app.nearby.NearbyUiState
 import com.sproutly.app.nearby.model.GeoPoint
 import com.sproutly.app.nearby.model.Place
 import com.sproutly.app.nearby.model.PlaceKind
+import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.geometry.LatLng
+import org.maplibre.android.maps.MapLibreMap
+import org.maplibre.android.maps.MapView
+import org.maplibre.android.maps.Style
+import org.maplibre.android.style.expressions.Expression
+import org.maplibre.android.style.layers.CircleLayer
+import org.maplibre.android.style.layers.PropertyFactory.circleColor
+import org.maplibre.android.style.layers.PropertyFactory.circleOpacity
+import org.maplibre.android.style.layers.PropertyFactory.circleRadius
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeColor
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeOpacity
+import org.maplibre.android.style.layers.PropertyFactory.circleStrokeWidth
+import org.maplibre.android.style.sources.GeoJsonSource
+import org.maplibre.geojson.Feature
+import org.maplibre.geojson.FeatureCollection
+import org.maplibre.geojson.Point
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.hypot
@@ -42,14 +75,8 @@ import kotlin.math.max
 import kotlin.math.sin
 
 /**
- * Compose-rendered stylized map of central Madrid. We swapped this in after the
- * MapLibre/OpenStreetMap tile path proved unreliable across devices (silent
- * tile-fetch failures, occasional GL init issues on emulators). Drawing the
- * map ourselves means it always renders, always centres on the active origin
- * (Madrid by default), and always shows the pin set — perfect for the demo.
- *
- * The projection is plain equirectangular centred on `state.origin`, which is
- * accurate to well under a metre over the few-km extent we render.
+ * MapLibre-backed OpenStreetMap view. If the native map path fails to initialize
+ * or load, the Compose canvas fallback below still shows the origin and pins.
  */
 @Composable
 fun NearbyMap(
@@ -58,8 +85,216 @@ fun NearbyMap(
     onPlaceSelected: (Place) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var useFallbackMap by remember { mutableStateOf(false) }
+
+    if (useFallbackMap) {
+        FallbackNearbyMap(
+            state = state,
+            selectedPlaceId = selectedPlaceId,
+            onPlaceSelected = onPlaceSelected,
+            modifier = modifier,
+        )
+        return
+    }
+
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(BgSurface),
+    ) {
+        MapLibreNearbyMap(
+            state = state,
+            selectedPlaceId = selectedPlaceId,
+            onPlaceSelected = onPlaceSelected,
+            onMapUnavailable = { useFallbackMap = true },
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        Text(
+            text = AppConfig.MAP_ATTRIBUTION,
+            color = TextPrimary,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(10.dp)
+                .background(BgDeep.copy(alpha = 0.72f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun MapLibreNearbyMap(
+    state: NearbyUiState,
+    selectedPlaceId: String?,
+    onPlaceSelected: (Place) -> Unit,
+    onMapUnavailable: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val latestPlaces by rememberUpdatedState(state.places)
+    val latestOnPlaceSelected by rememberUpdatedState(onPlaceSelected)
+    val latestOnMapUnavailable by rememberUpdatedState(onMapUnavailable)
+    var map by remember { mutableStateOf<MapLibreMap?>(null) }
+    var style by remember { mutableStateOf<Style?>(null) }
+
+    val mapView = remember {
+        runCatching {
+            MapView(context).also { view ->
+                view.onCreate(null)
+                view.addOnDidFailLoadingMapListener { reason ->
+                    Log.w(MAP_TAG, "MapLibre failed loading map: $reason")
+                    latestOnMapUnavailable()
+                }
+            }
+        }.onFailure { error ->
+            Log.w(MAP_TAG, "MapLibre failed to initialize", error)
+        }.getOrNull()
+    }
+
+    if (mapView == null) {
+        LaunchedEffect(Unit) { latestOnMapUnavailable() }
+        FallbackNearbyMap(
+            state = state,
+            selectedPlaceId = selectedPlaceId,
+            onPlaceSelected = onPlaceSelected,
+            modifier = modifier,
+        )
+        return
+    }
+
+    DisposableEffect(lifecycleOwner, mapView) {
+        var started = false
+        var resumed = false
+
+        fun startMap() {
+            if (!started) {
+                mapView.onStart()
+                started = true
+            }
+        }
+
+        fun resumeMap() {
+            if (!resumed) {
+                mapView.onResume()
+                resumed = true
+            }
+        }
+
+        fun pauseMap() {
+            if (resumed) {
+                mapView.onPause()
+                resumed = false
+            }
+        }
+
+        fun stopMap() {
+            if (started) {
+                mapView.onStop()
+                started = false
+            }
+        }
+
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) startMap()
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) resumeMap()
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> startMap()
+                Lifecycle.Event.ON_RESUME -> resumeMap()
+                Lifecycle.Event.ON_PAUSE -> pauseMap()
+                Lifecycle.Event.ON_STOP -> stopMap()
+                Lifecycle.Event.ON_DESTROY -> {
+                    pauseMap()
+                    stopMap()
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            pauseMap()
+            stopMap()
+            mapView.onDestroy()
+            map = null
+            style = null
+        }
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = {
+            mapView.apply {
+                getMapAsync { readyMap ->
+                    map = readyMap
+                    readyMap.setMinZoomPreference(9.0)
+                    readyMap.setMaxZoomPreference(18.0)
+                    readyMap.addOnMapClickListener { latLng ->
+                        val screenPoint = readyMap.projection.toScreenLocation(latLng)
+                        val tapBounds = RectF(
+                            screenPoint.x - TAP_TARGET_PX,
+                            screenPoint.y - TAP_TARGET_PX,
+                            screenPoint.x + TAP_TARGET_PX,
+                            screenPoint.y + TAP_TARGET_PX,
+                        )
+                        val placeId = readyMap.queryRenderedFeatures(
+                            tapBounds,
+                            SELECTED_PLACE_LAYER_ID,
+                            PLACE_LAYER_ID,
+                        ).firstNotNullOfOrNull { feature ->
+                            feature.getStringProperty(PROPERTY_ID)
+                        }
+                        val place = latestPlaces.firstOrNull { it.id == placeId }
+                        if (place != null) {
+                            latestOnPlaceSelected(place)
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    readyMap.setStyle(Style.Builder().fromJson(OsmStyle.JSON)) { loadedStyle ->
+                        ensureNearbyLayers(loadedStyle)
+                        style = loadedStyle
+                    }
+                }
+            }
+        },
+    )
+
+    LaunchedEffect(map, style, state.places, state.origin, selectedPlaceId) {
+        style?.let { updateNearbySources(it, state, selectedPlaceId) }
+    }
+
+    LaunchedEffect(map, style, state.origin, state.effectiveRadiusKm) {
+        map?.let { readyMap ->
+            if (style != null) {
+                readyMap.moveCamera(
+                    CameraUpdateFactory.newLatLngZoom(
+                        LatLng(state.origin.lat, state.origin.lng),
+                        zoomForRadius(state.effectiveRadiusKm),
+                    )
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Compose-rendered backup map. It is intentionally simple and deterministic so
+ * Nearby still works on emulators/devices where the native GL tile path fails.
+ */
+@Composable
+private fun FallbackNearbyMap(
+    state: NearbyUiState,
+    selectedPlaceId: String?,
+    onPlaceSelected: (Place) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val density = LocalDensity.current
-    val halfExtentKm = max(state.filters.maxDistanceKm * 1.1, 3.5)
+    val halfExtentKm = max(state.effectiveRadiusKm * 1.1, 3.5)
     val tapRadiusPx = with(density) { 26.dp.toPx() }
 
     Box(
@@ -119,6 +354,149 @@ fun NearbyMap(
         )
     }
 }
+
+// ── MapLibre sources/layers ─────────────────────────────────────────────────
+
+private fun ensureNearbyLayers(style: Style) {
+    if (style.getSource(ORIGIN_SOURCE_ID) == null) {
+        style.addSource(GeoJsonSource(ORIGIN_SOURCE_ID, emptyFeatureCollection()))
+    }
+    if (style.getSource(PLACES_SOURCE_ID) == null) {
+        style.addSource(GeoJsonSource(PLACES_SOURCE_ID, emptyFeatureCollection()))
+    }
+    if (style.getSource(SELECTED_PLACE_SOURCE_ID) == null) {
+        style.addSource(GeoJsonSource(SELECTED_PLACE_SOURCE_ID, emptyFeatureCollection()))
+    }
+
+    if (style.getLayer(ORIGIN_HALO_LAYER_ID) == null) {
+        style.addLayer(
+            CircleLayer(ORIGIN_HALO_LAYER_ID, ORIGIN_SOURCE_ID).withProperties(
+                circleRadius(18f),
+                circleColor("#B7F7CE"),
+                circleOpacity(0.24f),
+                circleStrokeColor("#F8FFF9"),
+                circleStrokeOpacity(0.28f),
+                circleStrokeWidth(1.5f),
+            )
+        )
+    }
+    if (style.getLayer(ORIGIN_LAYER_ID) == null) {
+        style.addLayer(
+            CircleLayer(ORIGIN_LAYER_ID, ORIGIN_SOURCE_ID).withProperties(
+                circleRadius(7f),
+                circleColor("#7CE7B2"),
+                circleStrokeColor("#FFFFFF"),
+                circleStrokeWidth(2.5f),
+            )
+        )
+    }
+    if (style.getLayer(PLACE_HALO_LAYER_ID) == null) {
+        style.addLayer(
+            CircleLayer(PLACE_HALO_LAYER_ID, PLACES_SOURCE_ID).withProperties(
+                circleRadius(13f),
+                circleColor("#0E1E15"),
+                circleOpacity(0.58f),
+            )
+        )
+    }
+    if (style.getLayer(PLACE_LAYER_ID) == null) {
+        style.addLayer(
+            CircleLayer(PLACE_LAYER_ID, PLACES_SOURCE_ID).withProperties(
+                circleRadius(8f),
+                circleColor(placeColorExpression()),
+                circleStrokeColor("#F8FFF9"),
+                circleStrokeOpacity(0.92f),
+                circleStrokeWidth(2f),
+            )
+        )
+    }
+    if (style.getLayer(SELECTED_PLACE_LAYER_ID) == null) {
+        style.addLayer(
+            CircleLayer(SELECTED_PLACE_LAYER_ID, SELECTED_PLACE_SOURCE_ID).withProperties(
+                circleRadius(13f),
+                circleColor("#B7F7CE"),
+                circleStrokeColor("#07140D"),
+                circleStrokeWidth(3.5f),
+            )
+        )
+    }
+}
+
+private fun updateNearbySources(
+    style: Style,
+    state: NearbyUiState,
+    selectedPlaceId: String?,
+) {
+    style.getSourceAs<GeoJsonSource>(ORIGIN_SOURCE_ID)
+        ?.setGeoJson(originFeatureCollection(state.origin))
+    style.getSourceAs<GeoJsonSource>(PLACES_SOURCE_ID)
+        ?.setGeoJson(placeFeatureCollection(state.places))
+    style.getSourceAs<GeoJsonSource>(SELECTED_PLACE_SOURCE_ID)
+        ?.setGeoJson(selectedFeatureCollection(state.places, selectedPlaceId))
+}
+
+private fun placeFeatureCollection(places: List<Place>): FeatureCollection =
+    FeatureCollection.fromFeatures(
+        places.mapNotNull { place ->
+            val lat = place.lat ?: return@mapNotNull null
+            val lng = place.lng ?: return@mapNotNull null
+            Feature.fromGeometry(Point.fromLngLat(lng, lat)).apply {
+                addStringProperty(PROPERTY_ID, place.id)
+                addStringProperty(PROPERTY_KIND, place.kind.name)
+            }
+        }
+    )
+
+private fun selectedFeatureCollection(
+    places: List<Place>,
+    selectedPlaceId: String?,
+): FeatureCollection {
+    val selected = places.firstOrNull { it.id == selectedPlaceId }
+    val lat = selected?.lat
+    val lng = selected?.lng
+    return if (lat != null && lng != null) {
+        FeatureCollection.fromFeature(
+            Feature.fromGeometry(Point.fromLngLat(lng, lat)).apply {
+                addStringProperty(PROPERTY_ID, selected.id)
+                addStringProperty(PROPERTY_KIND, selected.kind.name)
+            }
+        )
+    } else {
+        emptyFeatureCollection()
+    }
+}
+
+private fun originFeatureCollection(origin: GeoPoint): FeatureCollection =
+    FeatureCollection.fromFeature(Feature.fromGeometry(Point.fromLngLat(origin.lng, origin.lat)))
+
+private fun emptyFeatureCollection(): FeatureCollection =
+    FeatureCollection.fromFeatures(emptyList<Feature>())
+
+private fun placeColorExpression(): Expression =
+    Expression.match(
+        Expression.get(PROPERTY_KIND),
+        Expression.literal("#7CE7B2"),
+        Expression.stop(PlaceKind.FULLY_PLANT_BASED.name, "#6EDA8A"),
+        Expression.stop(PlaceKind.PLANT_FRIENDLY.name, "#2EBD7E"),
+        Expression.stop(PlaceKind.SUPERMARKET.name, "#8ED7FF"),
+        Expression.stop(PlaceKind.RESTAURANT.name, "#7CE7B2"),
+    )
+
+private fun zoomForRadius(radiusKm: Double): Double =
+    if (radiusKm >= 10.0) 11.35 else 12.35
+
+private const val MAP_TAG = "NearbyMap"
+private const val ORIGIN_SOURCE_ID = "sproutly-origin-source"
+private const val ORIGIN_HALO_LAYER_ID = "sproutly-origin-halo"
+private const val ORIGIN_LAYER_ID = "sproutly-origin"
+private const val PLACES_SOURCE_ID = "sproutly-places-source"
+private const val PLACE_HALO_LAYER_ID = "sproutly-place-halo"
+private const val PLACE_LAYER_ID = "sproutly-place"
+private const val SELECTED_PLACE_SOURCE_ID = "sproutly-selected-place-source"
+private const val SELECTED_PLACE_LAYER_ID = "sproutly-selected-place"
+private const val PROPERTY_ID = "id"
+private const val PROPERTY_KIND = "kind"
+private const val TAP_TARGET_PX = 28f
 
 // ── Projection ───────────────────────────────────────────────────────────────
 
@@ -309,11 +687,11 @@ private fun DrawScope.drawPin(tip: Offset, color: Color, selected: Boolean) {
 }
 
 private fun colorForKind(kind: PlaceKind, selected: Boolean): Color {
-    if (selected) return Color(0xFFFFBC42)
+    if (selected) return Color(0xFFB7F7CE)
     return when (kind) {
         PlaceKind.FULLY_PLANT_BASED -> Color(0xFF6EDA8A)
         PlaceKind.PLANT_FRIENDLY -> Color(0xFF2EBD7E)
-        PlaceKind.SUPERMARKET -> Color(0xFFF6C669)
+        PlaceKind.SUPERMARKET -> Color(0xFF8ED7FF)
         PlaceKind.RESTAURANT -> Color(0xFF7CE7B2)
     }
 }

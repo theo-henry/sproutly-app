@@ -184,6 +184,7 @@ fun NearbyScreen(
 
             FiltersSection(
                 filters = state.filters,
+                effectiveRadiusKm = state.effectiveRadiusKm,
                 onChange = {
                     selectedPlaceId = null
                     viewModel.setFilters(it)
@@ -419,7 +420,11 @@ private fun LocateButton(enabled: Boolean, onClick: () -> Unit, modifier: Modifi
 // ── Filters ─────────────────────────────────────────────────────────────────
 
 @Composable
-private fun FiltersSection(filters: NearbyFilters, onChange: (NearbyFilters) -> Unit) {
+private fun FiltersSection(
+    filters: NearbyFilters,
+    effectiveRadiusKm: Double,
+    onChange: (NearbyFilters) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(
             "FILTERS",
@@ -461,10 +466,10 @@ private fun FiltersSection(filters: NearbyFilters, onChange: (NearbyFilters) -> 
             FilterPill("Open now", selected = filters.openNow) {
                 onChange(filters.copy(openNow = !filters.openNow))
             }
-            FilterPill("≤ 5 km", selected = filters.maxDistanceKm == 5.0) {
+            FilterPill("≤ 5 km", selected = effectiveRadiusKm == 5.0) {
                 onChange(filters.copy(maxDistanceKm = 5.0))
             }
-            FilterPill("≤ 10 km", selected = filters.maxDistanceKm == 10.0) {
+            FilterPill("≤ 10 km", selected = effectiveRadiusKm == 10.0) {
                 onChange(filters.copy(maxDistanceKm = 10.0))
             }
         }
@@ -498,7 +503,7 @@ private fun FilterPill(label: String, selected: Boolean, onClick: () -> Unit) {
 @Composable
 private fun ResultsHeader(state: NearbyUiState) {
     val visible = state.places.size
-    val radius = state.filters.maxDistanceKm.toInt()
+    val radius = state.effectiveRadiusKm.toInt()
     val text = when {
         state.loading -> "Searching within $radius km…"
         state.error != null -> "We hit a snag"
@@ -535,7 +540,7 @@ private fun EmptyCard() {
         Text("Nothing matches here yet", color = TextPrimary, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(6.dp))
         Text(
-            "Try widening to 10 km or removing a filter. Coverage depends on community-tagged OpenStreetMap data.",
+            "Try removing a filter. Coverage depends on community-tagged OpenStreetMap data.",
             color = TextMuted,
             style = MaterialTheme.typography.bodyMedium,
         )

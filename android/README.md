@@ -46,7 +46,7 @@ com.sproutly.app
 ├── mealplan/          Editable 7-day plan, starter generator, Supabase upsert
 ├── recipes/           Featured/quick/seasonal placeholder feed
 ├── products/          Categories + deals + scanner CTA
-├── nearby/            Placeholder map card + list + filters scaffolding
+├── nearby/            MapLibre OSM map + location-aware plant-based search
 ├── scanner/           Camera permission + ML Kit barcode placeholder
 ├── notifications/     WorkManager reminder scaffold
 ├── shopping/          Shopping-list models
@@ -91,12 +91,19 @@ These are wired with interfaces and TODOs so they can be filled in without
 restructuring:
 
 - **Scanner** — CameraX preview + ML Kit analyzer not yet bound (just permission flow).
-- **Nearby map** — MapLibre renders an OpenStreetMap-backed map. The screen
-  requests device location and falls back to central Madrid for the MVP.
 - **AI** — `AiRepository` is an interface only. **Do not** add Gemini keys to the
   Android client; implement against a Supabase Edge Function and inject that
   impl in `SproutlyApp.onCreate()`.
 - **Room** — dependency added; no DAOs yet.
+
+## Nearby map
+
+The Nearby tab requests fine/coarse Android location permission, centers on the
+device when available, and falls back to central Madrid otherwise. It searches
+OpenStreetMap/Overpass for plant-based or plant-friendly places within 5 km and
+automatically widens to 10 km when fewer than five matches are found. MapLibre
+renders OSM raster tiles; a Compose canvas fallback remains in place so the tab
+still shows the origin and pins if the native map renderer fails on a device.
 
 ## Build from CLI
 

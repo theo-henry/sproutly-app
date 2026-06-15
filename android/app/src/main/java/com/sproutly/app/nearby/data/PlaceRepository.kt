@@ -58,6 +58,34 @@ class PlaceRepository(
     suspend fun nearby(
         origin: GeoPoint,
         filters: NearbyFilters = NearbyFilters(),
+    ): NearbySearchResult {
+        val requestedRadius = filters.maxDistanceKm.coerceIn(MIN_RADIUS_KM, EXPANDED_RADIUS_KM)
+        val requestedFilters = filters.copy(maxDistanceKm = requestedRadius)
+        val initial = placesForRadius(origin, requestedFilters)
+
+        if (requestedRadius < EXPANDED_RADIUS_KM && initial.size < MIN_RESULTS_BEFORE_EXPANDING) {
+            val expandedFilters = filters.copy(maxDistanceKm = EXPANDED_RADIUS_KM)
+            val expanded = placesForRadius(origin, expandedFilters)
+            val merged = (expanded + initial)
+                .distinctBy { it.id }
+                .sortedBy { it.distanceKm }
+            return NearbySearchResult(
+                places = merged,
+                radiusKm = EXPANDED_RADIUS_KM,
+                expanded = true,
+            )
+        }
+
+        return NearbySearchResult(
+            places = initial,
+            radiusKm = requestedRadius,
+            expanded = false,
+        )
+    }
+
+    private suspend fun placesForRadius(
+        origin: GeoPoint,
+        filters: NearbyFilters,
     ): List<Place> {
         val overpass = try {
             osmService.searchAround(origin, filters)
@@ -208,9 +236,18 @@ class PlaceRepository(
 
     private companion object {
         const val LOCATION_TIMEOUT_MS = 8_000L
+        const val MIN_RESULTS_BEFORE_EXPANDING = 5
+        const val MIN_RADIUS_KM = 0.5
+        const val EXPANDED_RADIUS_KM = 10.0
         const val TAG = "PlaceRepository"
     }
 }
+
+data class NearbySearchResult(
+    val places: List<Place>,
+    val radiusKm: Double,
+    val expanded: Boolean,
+)
 
 class OsmPlaceService {
     private val json = Json { ignoreUnknownKeys = true }

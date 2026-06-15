@@ -13,6 +13,7 @@ import com.sproutly.app.nearby.model.NearbyFilters
 import com.sproutly.app.nearby.model.Place
 import com.sproutly.app.profile.data.ProfileRepository
 import com.sproutly.app.profile.model.DietPreference
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.launch
 
 data class NearbyUiState(
     val filters: NearbyFilters = NearbyFilters(maxDistanceKm = 5.0),
+    val effectiveRadiusKm: Double = filters.maxDistanceKm,
     val places: List<Place> = emptyList(),
     val origin: GeoPoint = GeoPoint(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG),
     val locationSource: LocationSource = LocationSource.MADRID_FALLBACK,
@@ -38,29 +40,30 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
     val state: StateFlow<NearbyUiState> = _state.asStateFlow()
 
     private var initialized = false
+    private var reloadJob: Job? = null
 
     fun loadInitial(hasLocationPermission: Boolean) {
         if (initialized) return
         initialized = true
 
-        viewModelScope.launch { applyDietPreference() }
-
         if (!hasLocationPermission) {
             _state.value = _state.value.copy(requestingLocationPermission = true)
-            reload(useDeviceLocation = false)
+            reload(useDeviceLocation = false, refreshDietPreference = true)
             return
         }
-        reload(useDeviceLocation = true)
+        reload(useDeviceLocation = true, refreshDietPreference = true)
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
         _state.value = _state.value.copy(requestingLocationPermission = false)
-        reload(useDeviceLocation = granted)
+        reload(useDeviceLocation = granted, refreshDietPreference = true)
     }
 
     fun refresh() {
-        viewModelScope.launch { applyDietPreference() }
-        reload(useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE)
+        reload(
+            useDeviceLocation = _state.value.locationSource == LocationSource.DEVICE,
+            refreshDietPreference = true,
+        )
     }
 
     fun setFilters(filters: NearbyFilters) {
@@ -98,9 +101,20 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    private fun reload(useDeviceLocation: Boolean) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(loading = true, error = null)
+    private fun reload(
+        useDeviceLocation: Boolean,
+        refreshDietPreference: Boolean = false,
+    ) {
+        reloadJob?.cancel()
+        reloadJob = viewModelScope.launch {
+            if (refreshDietPreference) applyDietPreference()
+
+            val requestedFilters = _state.value.filters
+            _state.value = _state.value.copy(
+                loading = true,
+                error = null,
+                effectiveRadiusKm = requestedFilters.maxDistanceKm,
+            )
 
             val deviceLocation = if (useDeviceLocation) repo.currentLocation() else null
             val origin = deviceLocation ?: GeoPoint(AppConfig.MADRID_LAT, AppConfig.MADRID_LNG)
@@ -112,21 +126,25 @@ class NearbyViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             try {
-                val places = repo.nearby(origin, _state.value.filters)
+                val result = repo.nearby(origin, requestedFilters)
                 _state.value = _state.value.copy(
-                    places = places,
+                    places = result.places,
                     origin = origin,
                     locationSource = source,
                     loading = false,
+                    effectiveRadiusKm = result.radiusKm,
                     fallbackNoticeId = fallbackNoticeId,
                     error = null,
                 )
+            } catch (cancel: kotlinx.coroutines.CancellationException) {
+                throw cancel
             } catch (error: Exception) {
                 _state.value = _state.value.copy(
                     places = emptyList(),
                     origin = origin,
                     locationSource = source,
                     loading = false,
+                    effectiveRadiusKm = requestedFilters.maxDistanceKm,
                     fallbackNoticeId = fallbackNoticeId,
                     error = error.message ?: "Could not load nearby places.",
                 )

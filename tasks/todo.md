@@ -27,3 +27,4 @@
 - [ ] Deploy the migration + edge function and confirm the Apps Script email path still works end-to-end.
 - [ ] Delete the empty `supabase/functions/meal-plan-callback` directory.
 - [x] Make Nearby resilient: fall back to Madrid + curated plant-based places when Overpass is unreachable, and harden the device-location lookup so it walks fused → balanced → platform LocationManager.
+- [x] Replace MapLibre map with a Compose-Canvas stylized Madrid map (grid streets, Retiro/Casa de Campo parks, Manzanares river) — no tile-server dependency, guaranteed to render Madrid on any device.

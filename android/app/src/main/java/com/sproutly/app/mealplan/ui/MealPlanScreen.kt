@@ -78,13 +78,13 @@ fun MealPlanScreen(
                     item {
                         SproutlyCard(accent = true) {
                             Text(
-                                "Generate and email plan",
+                                "Generate meal plan",
                                 color = TextPrimary,
                                 style = MaterialTheme.typography.titleMedium,
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
-                                "Uses your saved diet preference and tags, saves the latest plan to your account, and emails it through the connected Google Apps Script workflow.",
+                                "Uses your saved diet preference and tags, then saves the latest plan to your account.",
                                 color = TextMuted,
                                 style = MaterialTheme.typography.bodyMedium,
                             )

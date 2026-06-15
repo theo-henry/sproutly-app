@@ -59,19 +59,21 @@ class PlaceRepository(
         origin: GeoPoint,
         filters: NearbyFilters = NearbyFilters(),
     ): List<Place> {
-        val places = try {
+        val overpass = try {
             osmService.searchAround(origin, filters)
         } catch (cancel: kotlinx.coroutines.CancellationException) {
             throw cancel
         } catch (error: Exception) {
-            // Demo-safe fallback: when Overpass is unreachable or returns
-            // unparseable data, populate the map with a curated set of Madrid
-            // plant-based spots so the user always sees recommendations
-            // instead of an empty "couldn't reach OSM" card.
-            Log.w(TAG, "nearby: Overpass unreachable — using curated Madrid fallback (${error.message})")
-            MadridFallback.places(origin)
+            Log.w(TAG, "nearby: Overpass failed — falling back to curated list (${error.message})")
+            emptyList()
         }
-        return places.filterBy(filters).sortedBy { it.distanceKm }
+        // Demo-safe fallback: use the curated Madrid list any time Overpass
+        // came back empty *or* errored. The downstream distance filter still
+        // applies, so far-away users naturally see "no matches" rather than
+        // Madrid pins on a foreign map.
+        val pool = if (overpass.isNotEmpty()) overpass else MadridFallback.places(origin)
+        if (overpass.isEmpty()) Log.d(TAG, "nearby: using ${pool.size} curated places (origin ${origin.lat},${origin.lng})")
+        return pool.filterBy(filters).sortedBy { it.distanceKm }
     }
 
     private fun hasLocationPermission(): Boolean {
@@ -101,8 +103,8 @@ class PlaceRepository(
         // 1. Cached last fused location is usually instant.
         if (fused != null) {
             try {
-                fused.lastLocation.awaitNullable()?.let {
-                    Log.d(TAG, "location: fused.lastLocation")
+                fused.lastLocation.awaitNullable()?.takeIf { it.isUsable("fused.lastLocation") }?.let {
+                    Log.d(TAG, "location: fused.lastLocation ${it.latitude},${it.longitude}")
                     return it
                 }
             } catch (t: Throwable) {
@@ -112,29 +114,61 @@ class PlaceRepository(
 
         // 2. Ask for a fresh fused fix at high accuracy.
         if (fused != null) {
-            currentFusedLocation(fused, Priority.PRIORITY_HIGH_ACCURACY)?.let {
-                Log.d(TAG, "location: fused.getCurrentLocation HIGH_ACCURACY")
-                return it
-            }
+            currentFusedLocation(fused, Priority.PRIORITY_HIGH_ACCURACY)
+                ?.takeIf { it.isUsable("fused.HIGH") }
+                ?.let {
+                    Log.d(TAG, "location: fused.getCurrentLocation HIGH_ACCURACY ${it.latitude},${it.longitude}")
+                    return it
+                }
         }
 
         // 3. Fall back to balanced power — emulators / weak GPS often only
         //    deliver a network-derived fix.
         if (fused != null) {
-            currentFusedLocation(fused, Priority.PRIORITY_BALANCED_POWER_ACCURACY)?.let {
-                Log.d(TAG, "location: fused.getCurrentLocation BALANCED")
-                return it
-            }
+            currentFusedLocation(fused, Priority.PRIORITY_BALANCED_POWER_ACCURACY)
+                ?.takeIf { it.isUsable("fused.BALANCED") }
+                ?.let {
+                    Log.d(TAG, "location: fused.getCurrentLocation BALANCED ${it.latitude},${it.longitude}")
+                    return it
+                }
         }
 
         // 4. As a last resort, use the platform LocationManager directly —
         //    works on devices without Google Play Services.
-        platformLastKnown()?.let {
-            Log.d(TAG, "location: platform LocationManager")
+        platformLastKnown()?.takeIf { it.isUsable("platform") }?.let {
+            Log.d(TAG, "location: platform LocationManager ${it.latitude},${it.longitude}")
             return it
         }
 
         return null
+    }
+
+    /**
+     * Reject obviously-bogus fixes that emulators / passive providers love to
+     * hand back: (0,0) sentinels, "accuracy worse than a small city" results,
+     * and Locations more than a day old. Without this filter the app honors
+     * a fake (0,0) Location, the map flies mid-ocean, and every curated
+     * Madrid place gets stripped by the distance filter.
+     */
+    private fun Location.isUsable(label: String): Boolean {
+        if (latitude == 0.0 && longitude == 0.0) {
+            Log.d(TAG, "$label: rejected (0,0) sentinel")
+            return false
+        }
+        if (latitude.isNaN() || longitude.isNaN()) {
+            Log.d(TAG, "$label: rejected NaN coords")
+            return false
+        }
+        if (hasAccuracy() && accuracy > 5_000f) {
+            Log.d(TAG, "$label: rejected, accuracy=${accuracy}m")
+            return false
+        }
+        val ageMs = System.currentTimeMillis() - time
+        if (ageMs > 24L * 60 * 60 * 1000) {
+            Log.d(TAG, "$label: rejected, age=${ageMs / 60_000}min")
+            return false
+        }
+        return true
     }
 
     @SuppressLint("MissingPermission")
@@ -208,7 +242,9 @@ class OsmPlaceService {
             .mapNotNull { it.toPlace(origin) }
             .distinctBy { "${it.osmType}:${it.osmId}" }
 
-        lastCache = SearchCache(cacheKey, places)
+        // Only cache non-empty Overpass responses so a one-off empty result
+        // (transient hiccup) doesn't lock the user out of the demo fallback.
+        if (places.isNotEmpty()) lastCache = SearchCache(cacheKey, places)
         return places
     }
 

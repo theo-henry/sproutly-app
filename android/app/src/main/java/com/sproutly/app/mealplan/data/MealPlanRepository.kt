@@ -78,7 +78,7 @@ class MealPlanRepository {
     )
 
     suspend fun requestGeneratedPlan(weekStartISO: String): AppResult<MealPlan> = runCatching {
-        if (DemoAccountStore.isEnabled()) error("Email meal plan generation is unavailable in demo mode.")
+        if (DemoAccountStore.isEnabled()) error("Meal plan generation is unavailable in demo mode.")
         val accessToken = client.auth.currentAccessTokenOrNull() ?: error("Not signed in")
         val functionUrl = "${AppConfig.supabaseUrl.trimEnd('/')}/functions/v1/request-meal-plan"
         val response = http.post(functionUrl) {

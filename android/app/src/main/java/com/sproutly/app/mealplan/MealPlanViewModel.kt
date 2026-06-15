@@ -51,7 +51,7 @@ class MealPlanViewModel(
             when (val r = repo.requestGeneratedPlan(weekStart)) {
                 is AppResult.Success -> {
                     _state.value = UiState.Success(r.data)
-                    _message.value = "Meal plan generated, saved, and emailed."
+                    _message.value = "Meal plan generated and saved."
                 }
                 is AppResult.Failure -> _message.value = "Request failed: ${r.message}"
             }

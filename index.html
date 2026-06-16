@@ -2,24 +2,1174 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/leaf.svg" />
-    <!-- Mobile-first viewport: lock to device width, allow notch-safe areas. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1"
+      name="description"
+      content="Download Sproutly, a calm plant-based hub for meals, products, nearby spots, and recipes."
     />
-    <meta name="theme-color" content="#0f3a24" />
-    <!-- Google Fonts: Fraunces (display, organic warmth) + Inter (UI). -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+    <meta name="theme-color" content="#06120d" />
+    <meta property="og:title" content="Sproutly" />
+    <meta
+      property="og:description"
+      content="Your plant-based day, planned in one app."
     />
-    <title>Sproutly — your plant-based hub</title>
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="public/leaf.svg" />
+    <title>Sproutly | Download the app</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg-deep: #06120d;
+        --bg-surface: #0e1e15;
+        --bg-elevated: #14291e;
+        --leaf-mint: #7ce7b2;
+        --leaf-green: #2ebd7e;
+        --leaf-deep: #13503a;
+        --text-primary: #e8f5ec;
+        --text-muted: #a9c2b2;
+        --divider: #1e3527;
+        --cyan: #8be9ff;
+        --violet: #b8a1ff;
+        --black: #020604;
+        --shadow: rgba(0, 0, 0, 0.42);
+        --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        min-height: 100%;
+        background: var(--bg-deep);
+      }
+
+      body {
+        min-height: 100%;
+        margin: 0;
+        overflow-x: hidden;
+        color: var(--text-primary);
+        background:
+          linear-gradient(115deg, rgba(124, 231, 178, 0.07), transparent 36%),
+          linear-gradient(248deg, rgba(139, 233, 255, 0.08), transparent 42%),
+          linear-gradient(180deg, #04100b 0%, var(--bg-deep) 42%, #030806 100%);
+        font-family: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      body::before,
+      body::after {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        content: "";
+      }
+
+      body::before {
+        z-index: -2;
+        opacity: 0.34;
+        background-image:
+          linear-gradient(rgba(124, 231, 178, 0.07) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(124, 231, 178, 0.07) 1px, transparent 1px);
+        background-size: 46px 46px;
+        mask-image: linear-gradient(180deg, transparent 0%, #000 12%, #000 78%, transparent 100%);
+      }
+
+      body::after {
+        z-index: -1;
+        opacity: 0.12;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.84' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .site-header {
+        position: relative;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: min(1180px, calc(100% - 48px));
+        margin: 0 auto;
+        padding: 24px 0 0;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--text-primary);
+        font-size: 17px;
+        font-weight: 650;
+      }
+
+      .logo-mark {
+        position: relative;
+        width: 34px;
+        height: 34px;
+        border: 1px solid rgba(124, 231, 178, 0.36);
+        border-radius: 50%;
+        background:
+          linear-gradient(180deg, rgba(124, 231, 178, 0.18), rgba(46, 189, 126, 0.04)),
+          var(--bg-surface);
+        box-shadow: inset 0 1px 0 rgba(232, 245, 236, 0.08);
+      }
+
+      .logo-mark::before,
+      .logo-mark::after {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 8px;
+        height: 16px;
+        border-radius: 999px 999px 999px 8px;
+        background: var(--leaf-mint);
+        content: "";
+        transform-origin: bottom center;
+      }
+
+      .logo-mark::before {
+        transform: translate(-78%, -42%) rotate(-35deg);
+      }
+
+      .logo-mark::after {
+        background: var(--leaf-green);
+        transform: translate(-18%, -42%) rotate(35deg);
+      }
+
+      .availability {
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+
+      .hero {
+        position: relative;
+        min-height: 82vh;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        position: absolute;
+        inset: 12% -10% auto auto;
+        width: 58%;
+        height: 68%;
+        border: 1px solid rgba(124, 231, 178, 0.08);
+        background:
+          repeating-linear-gradient(135deg, rgba(124, 231, 178, 0.1) 0 1px, transparent 1px 18px),
+          linear-gradient(135deg, rgba(20, 41, 30, 0.72), rgba(6, 18, 13, 0.04));
+        clip-path: polygon(15% 0, 100% 8%, 86% 100%, 0 82%);
+        content: "";
+        filter: blur(0.2px);
+      }
+
+      .hero-shell {
+        position: relative;
+        display: grid;
+        width: min(1180px, calc(100% - 48px));
+        min-height: 76vh;
+        margin: 0 auto;
+        padding: 82px 0 38px;
+        align-items: center;
+      }
+
+      .hero-copy {
+        position: relative;
+        z-index: 4;
+        width: min(590px, 100%);
+      }
+
+      .kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 0 22px;
+        color: var(--leaf-mint);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .kicker::before {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--leaf-mint);
+        content: "";
+        box-shadow: 0 0 24px rgba(124, 231, 178, 0.72);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 96px;
+        font-weight: 650;
+        line-height: 0.92;
+      }
+
+      .lede {
+        max-width: 520px;
+        margin: 28px 0 0;
+        color: var(--text-muted);
+        font-size: 21px;
+        line-height: 1.45;
+      }
+
+      .store-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 38px;
+      }
+
+      .store-button {
+        position: relative;
+        display: inline-flex;
+        min-width: 196px;
+        min-height: 58px;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(124, 231, 178, 0.24);
+        border-radius: 18px;
+        padding: 16px 20px;
+        font-size: 15px;
+        font-weight: 700;
+        transition:
+          transform 260ms var(--ease-out),
+          border-color 260ms var(--ease-out),
+          background 260ms var(--ease-out),
+          box-shadow 260ms var(--ease-out);
+      }
+
+      .store-button::before {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+        content: "";
+        transform: translateX(-115%);
+        transition: transform 620ms var(--ease-out);
+      }
+
+      .store-button:hover,
+      .store-button:focus-visible {
+        border-color: rgba(124, 231, 178, 0.7);
+        box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+        transform: translateY(-3px);
+      }
+
+      .store-button:hover::before,
+      .store-button:focus-visible::before {
+        transform: translateX(115%);
+      }
+
+      .store-button:focus-visible {
+        outline: 3px solid rgba(139, 233, 255, 0.5);
+        outline-offset: 3px;
+      }
+
+      .store-ios {
+        color: var(--bg-deep);
+        background: var(--leaf-mint);
+      }
+
+      .store-android {
+        background:
+          linear-gradient(180deg, rgba(20, 41, 30, 0.95), rgba(14, 30, 21, 0.88)),
+          var(--bg-surface);
+      }
+
+      .store-icon {
+        display: grid;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        flex: 0 0 auto;
+      }
+
+      .store-icon svg {
+        display: block;
+        width: 24px;
+        height: 24px;
+      }
+
+      .visual-stage {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        right: max(-30px, calc((100vw - 1180px) / 2 - 50px));
+        bottom: 0;
+        width: min(560px, 48vw);
+        pointer-events: none;
+      }
+
+      .signal-rail {
+        position: absolute;
+        top: 15%;
+        left: -40px;
+        display: grid;
+        gap: 10px;
+        width: 190px;
+        opacity: 0.9;
+      }
+
+      .signal {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border: 1px solid rgba(124, 231, 178, 0.18);
+        border-radius: 999px;
+        padding: 9px 12px;
+        background: rgba(6, 18, 13, 0.64);
+        color: var(--text-muted);
+        font-size: 12px;
+        backdrop-filter: blur(18px);
+        animation: drift 6s var(--ease-out) infinite alternate;
+      }
+
+      .signal:nth-child(2) {
+        margin-left: 36px;
+        animation-delay: -1.5s;
+      }
+
+      .signal:nth-child(3) {
+        margin-left: 12px;
+        animation-delay: -2.8s;
+      }
+
+      .signal strong {
+        color: var(--leaf-mint);
+        font-size: 13px;
+      }
+
+      .phone-shell {
+        position: absolute;
+        top: 50%;
+        right: 46px;
+        width: 352px;
+        aspect-ratio: 390 / 844;
+        border: 1px solid rgba(232, 245, 236, 0.15);
+        border-radius: 54px;
+        padding: 11px;
+        background:
+          linear-gradient(145deg, rgba(232, 245, 236, 0.2), transparent 28%),
+          linear-gradient(320deg, rgba(46, 189, 126, 0.32), transparent 38%),
+          #07100c;
+        box-shadow:
+          0 46px 140px rgba(0, 0, 0, 0.48),
+          inset 0 1px 0 rgba(255, 255, 255, 0.14);
+        transform: translateY(-50%) rotate(-4deg);
+        animation: phoneFloat 8s var(--ease-out) infinite alternate;
+      }
+
+      .phone-shell::before {
+        position: absolute;
+        top: 18px;
+        left: 50%;
+        width: 94px;
+        height: 26px;
+        border-radius: 999px;
+        background: #020604;
+        content: "";
+        transform: translateX(-50%);
+        z-index: 3;
+      }
+
+      .phone-screen {
+        position: relative;
+        height: 100%;
+        overflow: hidden;
+        border-radius: 44px;
+        border: 1px solid rgba(124, 231, 178, 0.12);
+        background: var(--bg-deep);
+      }
+
+      .phone-screen::after {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 16%),
+          repeating-linear-gradient(180deg, rgba(255, 255, 255, 0.018) 0 1px, transparent 1px 5px);
+        content: "";
+        pointer-events: none;
+      }
+
+      .app-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 48px 20px 10px;
+      }
+
+      .app-name {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: var(--text-primary);
+        font-size: 18px;
+        font-weight: 650;
+      }
+
+      .app-name span:first-child {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--leaf-mint);
+      }
+
+      .avatar {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border: 1px solid var(--divider);
+        border-radius: 50%;
+        background: var(--bg-surface);
+        color: var(--leaf-mint);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .app-content {
+        display: grid;
+        gap: 13px;
+        padding: 0 20px 96px;
+      }
+
+      .date-label,
+      .section-label {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .app-title {
+        margin: 6px 0 0;
+        color: var(--text-primary);
+        font-size: 28px;
+        font-style: italic;
+        font-weight: 450;
+        line-height: 1.08;
+      }
+
+      .app-subtitle {
+        margin: 5px 0 0;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.48;
+      }
+
+      .plate-card,
+      .action-tile,
+      .recipe-card,
+      .metric-card {
+        border: 1px solid var(--divider);
+        background: var(--bg-surface);
+      }
+
+      .plate-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 26px;
+        padding: 15px;
+      }
+
+      .plate-card::before {
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(120deg, rgba(124, 231, 178, 0.14), transparent 30%),
+          linear-gradient(310deg, rgba(139, 233, 255, 0.08), transparent 42%);
+        content: "";
+      }
+
+      .plate-card > * {
+        position: relative;
+      }
+
+      .plate-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        color: var(--leaf-mint);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .meal-list {
+        display: grid;
+        gap: 9px;
+        margin-top: 13px;
+      }
+
+      .meal-row {
+        display: grid;
+        grid-template-columns: 11px 1fr;
+        gap: 10px;
+      }
+
+      .meal-dot {
+        width: 10px;
+        height: 10px;
+        margin-top: 5px;
+        border: 2px solid var(--bg-surface);
+        border-radius: 50%;
+        background: var(--leaf-mint);
+        box-shadow: 0 0 0 1px rgba(124, 231, 178, 0.3);
+      }
+
+      .meal-row p {
+        margin: 0;
+      }
+
+      .meal-row p:first-child {
+        color: var(--text-muted);
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .meal-row p:last-child {
+        margin-top: 2px;
+        color: var(--text-primary);
+        font-size: 13px;
+        line-height: 1.32;
+      }
+
+      .action-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .action-tile {
+        min-height: 82px;
+        border-radius: 20px;
+        padding: 10px;
+      }
+
+      .action-glyph {
+        display: grid;
+        width: 28px;
+        height: 28px;
+        place-items: center;
+        border-radius: 50%;
+        background: rgba(124, 231, 178, 0.13);
+        color: var(--leaf-mint);
+        font-size: 15px;
+        font-weight: 800;
+      }
+
+      .action-tile strong,
+      .action-tile span {
+        display: block;
+      }
+
+      .action-tile strong {
+        margin-top: 8px;
+        font-size: 13px;
+      }
+
+      .action-tile span {
+        margin-top: 2px;
+        color: var(--text-muted);
+        font-size: 10px;
+        line-height: 1.3;
+      }
+
+      .recipe-card {
+        overflow: hidden;
+        border-radius: 24px;
+      }
+
+      .recipe-photo {
+        position: relative;
+        min-height: 108px;
+        background:
+          linear-gradient(180deg, transparent 0%, rgba(3, 8, 6, 0.78) 100%),
+          url("android/app/src/main/res/drawable-nodpi/recipe_tofu_bowl.webp") center / cover,
+          linear-gradient(135deg, #193629, #376b4c);
+      }
+
+      .recipe-photo::before {
+        position: absolute;
+        left: 14px;
+        top: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 999px;
+        padding: 6px 9px;
+        background: rgba(0, 0, 0, 0.38);
+        color: #fff;
+        content: "TONIGHT";
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      .recipe-info {
+        padding: 10px 13px 12px;
+      }
+
+      .recipe-info h2 {
+        margin: 0;
+        color: var(--text-primary);
+        font-size: 15px;
+        line-height: 1.2;
+      }
+
+      .recipe-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 7px;
+      }
+
+      .pill {
+        border: 1px solid rgba(124, 231, 178, 0.18);
+        border-radius: 999px;
+        padding: 4px 7px;
+        background: rgba(6, 18, 13, 0.55);
+        color: var(--text-muted);
+        font-size: 9px;
+        font-weight: 650;
+      }
+
+      .bottom-nav {
+        position: absolute;
+        right: 15px;
+        bottom: 11px;
+        left: 15px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        border: 1px solid rgba(30, 53, 39, 0.8);
+        border-radius: 27px;
+        padding: 8px;
+        background: rgba(6, 18, 13, 0.82);
+        backdrop-filter: blur(18px);
+      }
+
+      .nav-item {
+        display: grid;
+        min-width: 0;
+        place-items: center;
+        gap: 4px;
+        color: var(--text-muted);
+        font-size: 9px;
+      }
+
+      .nav-item.active {
+        color: var(--leaf-mint);
+      }
+
+      .nav-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 7px;
+        background: currentColor;
+        opacity: 0.9;
+      }
+
+      .feature-band {
+        position: relative;
+        z-index: 5;
+        border-top: 1px solid rgba(124, 231, 178, 0.14);
+        border-bottom: 1px solid rgba(124, 231, 178, 0.1);
+        background: rgba(3, 8, 6, 0.5);
+        backdrop-filter: blur(20px);
+      }
+
+      .feature-inner {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        width: min(1180px, calc(100% - 48px));
+        margin: 0 auto;
+      }
+
+      .feature {
+        min-height: 118px;
+        border-left: 1px solid rgba(124, 231, 178, 0.1);
+        padding: 24px;
+      }
+
+      .feature:last-child {
+        border-right: 1px solid rgba(124, 231, 178, 0.1);
+      }
+
+      .feature span {
+        display: block;
+        color: var(--leaf-mint);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .feature p {
+        margin: 10px 0 0;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .toast {
+        position: fixed;
+        z-index: 20;
+        right: 22px;
+        bottom: 22px;
+        max-width: min(320px, calc(100% - 44px));
+        border: 1px solid rgba(124, 231, 178, 0.22);
+        border-radius: 18px;
+        padding: 14px 16px;
+        background: rgba(6, 18, 13, 0.92);
+        color: var(--text-primary);
+        font-size: 14px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
+        opacity: 0;
+        transform: translateY(18px);
+        transition:
+          opacity 240ms var(--ease-out),
+          transform 240ms var(--ease-out);
+        backdrop-filter: blur(18px);
+      }
+
+      .toast.is-visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .reveal {
+        opacity: 0;
+        filter: blur(12px);
+        transform: translateY(28px);
+        transition:
+          opacity 800ms var(--ease-out),
+          filter 800ms var(--ease-out),
+          transform 800ms var(--ease-out);
+      }
+
+      .reveal.is-visible {
+        opacity: 1;
+        filter: blur(0);
+        transform: translateY(0);
+      }
+
+      .delay-1 {
+        transition-delay: 80ms;
+      }
+
+      .delay-2 {
+        transition-delay: 160ms;
+      }
+
+      .delay-3 {
+        transition-delay: 240ms;
+      }
+
+      @keyframes phoneFloat {
+        from {
+          transform: translateY(-50%) rotate(-4deg) translate3d(0, 0, 0);
+        }
+        to {
+          transform: translateY(-52%) rotate(-2deg) translate3d(-10px, -8px, 0);
+        }
+      }
+
+      @keyframes drift {
+        from {
+          transform: translate3d(0, 0, 0);
+        }
+        to {
+          transform: translate3d(12px, -10px, 0);
+        }
+      }
+
+      @media (max-width: 1050px) {
+        h1 {
+          font-size: 74px;
+        }
+
+        .lede {
+          font-size: 19px;
+        }
+
+        .phone-shell {
+          right: 0;
+          width: 318px;
+        }
+
+        .visual-stage {
+          opacity: 0.78;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .site-header,
+        .hero-shell,
+        .feature-inner {
+          width: min(100% - 32px, 680px);
+        }
+
+        .availability {
+          display: none;
+        }
+
+        .hero {
+          min-height: auto;
+        }
+
+        .hero-shell {
+          display: block;
+          min-height: 0;
+          padding: 58px 0 34px;
+        }
+
+        .visual-stage {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: flex-start;
+          width: 100%;
+          height: auto;
+          min-height: 0;
+          margin-top: 40px;
+          opacity: 1;
+        }
+
+        .phone-shell {
+          position: relative;
+          top: auto;
+          right: auto;
+          width: min(338px, 86vw);
+          margin-top: 8px;
+          transform: rotate(-2deg);
+          animation: none;
+        }
+
+        .signal-rail {
+          position: relative;
+          top: auto;
+          left: auto;
+          width: min(280px, 80vw);
+          transform: none;
+        }
+
+        .signal:nth-child(2),
+        .signal:nth-child(3) {
+          margin-left: 0;
+        }
+
+        .feature-inner {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .feature:nth-child(3) {
+          border-left: 1px solid rgba(124, 231, 178, 0.1);
+        }
+      }
+
+      @media (max-width: 560px) {
+        .site-header {
+          padding-top: 18px;
+        }
+
+        h1 {
+          font-size: 51px;
+        }
+
+        .lede {
+          font-size: 17px;
+        }
+
+        .store-actions {
+          gap: 10px;
+        }
+
+        .store-button {
+          width: 100%;
+          min-width: 0;
+        }
+
+        .visual-stage {
+          margin-top: 32px;
+        }
+
+        .signal-rail {
+          display: none;
+        }
+
+        .phone-shell {
+          width: min(312px, 82vw);
+          margin-top: 0;
+          transform: rotate(-1deg);
+        }
+
+        .feature-inner {
+          grid-template-columns: 1fr;
+        }
+
+        .feature,
+        .feature:last-child {
+          min-height: auto;
+          border-right: 1px solid rgba(124, 231, 178, 0.1);
+          padding: 20px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.001ms !important;
+        }
+
+        .reveal {
+          opacity: 1;
+          filter: none;
+          transform: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <header class="site-header reveal">
+      <div class="brand" aria-label="Sproutly">
+        <span class="logo-mark" aria-hidden="true"></span>
+        <span>sproutly</span>
+      </div>
+      <div class="availability">iOS and Android</div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-shell">
+          <div class="hero-copy">
+            <p class="kicker reveal delay-1">Plant-based command center</p>
+            <h1 id="hero-title" class="reveal delay-2">Sproutly</h1>
+            <p class="lede reveal delay-3">
+              Meals, products, nearby spots, and recipes in one calm daily hub.
+            </p>
+
+            <div class="store-actions reveal delay-3" aria-label="Download Sproutly">
+              <a
+                class="store-button store-ios"
+                href="#"
+                data-download="iOS"
+                aria-label="Download Sproutly for iOS"
+              >
+                <span class="store-icon" aria-hidden="true">
+                  <svg viewBox="0 0 28 28" fill="none" role="img">
+                    <path
+                      d="M18.1 4.2c.7-.9 1.1-2 1-3.2-1 .1-2.2.7-2.9 1.6-.6.8-1.2 1.9-1 3 1.1.1 2.2-.5 2.9-1.4Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M22.6 19.5c-.5 1.2-.8 1.8-1.5 2.9-1 1.6-2.4 3.5-4.1 3.5-1.5 0-1.9-1-4-1s-2.5 1-4 1c-1.7 0-3-1.8-4.1-3.4-2.8-4.3-3.1-9.4-1.4-12.1 1.2-1.9 3.1-3 4.9-3 1.9 0 3.1 1 4.6 1s2.5-1 4.7-1c1.6 0 3.4.9 4.6 2.4-4 2.2-3.3 7.9.3 9.7Z"
+                      fill="currentColor"
+                    />
+                  </svg>
+                </span>
+                Download for iOS
+              </a>
+              <a
+                class="store-button store-android"
+                href="#"
+                data-download="Android"
+                aria-label="Download Sproutly for Android"
+              >
+                <span class="store-icon" aria-hidden="true">
+                  <svg viewBox="0 0 28 28" fill="none" role="img">
+                    <path
+                      d="m7.4 8.1-2-3.4a.8.8 0 1 1 1.4-.8L9 7.6a10.8 10.8 0 0 1 10 0l2.2-3.7a.8.8 0 1 1 1.4.8l-2 3.4A10 10 0 0 1 24 15.6H4a10 10 0 0 1 3.4-7.5Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M4 17.3h20v5.3a2.8 2.8 0 0 1-2.8 2.8H6.8A2.8 2.8 0 0 1 4 22.6v-5.3Z"
+                      fill="currentColor"
+                    />
+                    <path
+                      d="M9.6 12.4a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM18.4 12.4a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+                      fill="#06120d"
+                    />
+                  </svg>
+                </span>
+                Download for Android
+              </a>
+            </div>
+          </div>
+
+          <div class="visual-stage" aria-hidden="true">
+            <div class="signal-rail">
+              <div class="signal"><span>Plan</span><strong>7 days</strong></div>
+              <div class="signal"><span>Nearby</span><strong>5 km</strong></div>
+              <div class="signal"><span>Protein</span><strong>28g</strong></div>
+            </div>
+
+            <div class="phone-shell">
+              <div class="phone-screen">
+                <div class="app-top">
+                  <div class="app-name"><span></span><strong>sproutly</strong></div>
+                  <div class="avatar">T</div>
+                </div>
+
+                <div class="app-content">
+                  <div>
+                    <p class="date-label">Tuesday, 16 June</p>
+                    <p class="app-title">Good afternoon.</p>
+                    <p class="app-subtitle">
+                      Here is what your plant-based day looks like.
+                    </p>
+                  </div>
+
+                  <div class="plate-card">
+                    <div class="plate-header">
+                      <span>Today on your plate</span>
+                      <span>Plan</span>
+                    </div>
+                    <div class="meal-list">
+                      <div class="meal-row">
+                        <span class="meal-dot"></span>
+                        <div>
+                          <p>Breakfast</p>
+                          <p>Tofu scramble with greens</p>
+                        </div>
+                      </div>
+                      <div class="meal-row">
+                        <span class="meal-dot"></span>
+                        <div>
+                          <p>Lunch</p>
+                          <p>Lentil bowl with herbed tahini</p>
+                        </div>
+                      </div>
+                      <div class="meal-row">
+                        <span class="meal-dot"></span>
+                        <div>
+                          <p>Dinner</p>
+                          <p>Cashew pasta and roasted broccoli</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p class="section-label">Quick actions</p>
+                    <div class="action-grid" style="margin-top: 11px">
+                      <div class="action-tile">
+                        <span class="action-glyph">S</span>
+                        <strong>Scan</strong>
+                        <span>label check</span>
+                      </div>
+                      <div class="action-tile">
+                        <span class="action-glyph">M</span>
+                        <strong>Map</strong>
+                        <span>spots nearby</span>
+                      </div>
+                      <div class="action-tile">
+                        <span class="action-glyph">AI</span>
+                        <strong>Plan</strong>
+                        <span>meal week</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="recipe-card">
+                    <div class="recipe-photo"></div>
+                    <div class="recipe-info">
+                      <h2>High-protein tofu bowl</h2>
+                      <div class="recipe-meta">
+                        <span class="pill">25 min</span>
+                        <span class="pill">28g protein</span>
+                        <span class="pill">Vegan</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bottom-nav">
+                  <div class="nav-item active">
+                    <span class="nav-dot"></span>
+                    <span>Home</span>
+                  </div>
+                  <div class="nav-item">
+                    <span class="nav-dot"></span>
+                    <span>Products</span>
+                  </div>
+                  <div class="nav-item">
+                    <span class="nav-dot"></span>
+                    <span>Nearby</span>
+                  </div>
+                  <div class="nav-item">
+                    <span class="nav-dot"></span>
+                    <span>Recipes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-band" aria-label="Sproutly app features">
+        <div class="feature-inner">
+          <div class="feature reveal">
+            <span>Plan your week</span>
+            <p>AI-assisted meals that stay editable.</p>
+          </div>
+          <div class="feature reveal delay-1">
+            <span>Scan labels</span>
+            <p>Ingredient checks for plant-based shopping.</p>
+          </div>
+          <div class="feature reveal delay-2">
+            <span>Find nearby</span>
+            <p>Restaurants and supermarkets around you.</p>
+          </div>
+          <div class="feature reveal delay-3">
+            <span>Cook faster</span>
+            <p>Recipes filtered by time, diet, and protein.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <script>
+      const revealEls = document.querySelectorAll(".reveal");
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.16 }
+      );
+
+      revealEls.forEach((el) => observer.observe(el));
+
+      const toast = document.querySelector(".toast");
+      let toastTimer;
+
+      document.querySelectorAll("[data-download]").forEach((button) => {
+        button.addEventListener("click", (event) => {
+          event.preventDefault();
+          const platform = button.getAttribute("data-download");
+          toast.textContent = platform + " download placeholder. Add the file link here when ready.";
+          toast.classList.add("is-visible");
+          clearTimeout(toastTimer);
+          toastTimer = window.setTimeout(() => {
+            toast.classList.remove("is-visible");
+          }, 3000);
+        });
+      });
+    </script>
   </body>
 </html>

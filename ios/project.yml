@@ -6,6 +6,7 @@ options:
   createIntermediateGroups: true
   defaultConfig: Release
   xcodeVersion: "15.4"
+  objectVersion: 60
 settings:
   base:
     MARKETING_VERSION: "0.1.0"

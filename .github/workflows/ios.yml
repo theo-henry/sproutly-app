@@ -1,0 +1,71 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios.yml'
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-14
+    timeout-minutes: 25
+
+    defaults:
+      run:
+        working-directory: ios
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build archive (unsigned)
+        run: |
+          xcodebuild \
+            -project Sproutly.xcodeproj \
+            -scheme Sproutly \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Sproutly.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            archive
+
+      - name: Package unsigned IPA
+        run: |
+          mkdir -p build/Payload
+          cp -R build/Sproutly.xcarchive/Products/Applications/Sproutly.app build/Payload/
+          cd build
+          zip -qr Sproutly-unsigned.ipa Payload
+          rm -rf Payload
+          ls -lh Sproutly-unsigned.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sproutly-unsigned-ipa
+          path: ios/build/Sproutly-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload xcarchive (debug)
+        if: failure() || success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sproutly-xcarchive
+          path: ios/build/Sproutly.xcarchive
+          retention-days: 7

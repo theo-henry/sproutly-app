@@ -37,12 +37,14 @@ jobs:
             -project Sproutly.xcodeproj \
             -scheme Sproutly \
             -configuration Release \
+            -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -archivePath build/Sproutly.xcarchive \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
+            ENABLE_PREVIEWS=NO \
             archive
 
       - name: Package unsigned IPA

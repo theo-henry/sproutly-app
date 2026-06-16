@@ -34,6 +34,13 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Force pbxproj objectVersion to 60 (Xcode 15.x compatible)
+        run: |
+          pbxproj=Sproutly.xcodeproj/project.pbxproj
+          grep -E "objectVersion" "$pbxproj" | head -1
+          sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 60;/' "$pbxproj"
+          grep -E "objectVersion" "$pbxproj" | head -1
+
       - name: Build archive (unsigned)
         run: |
           xcodebuild \

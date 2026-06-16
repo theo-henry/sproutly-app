@@ -37,10 +37,33 @@ android {
         buildConfigField("String", "OVERPASS_ENDPOINT", "\"${localOrEnv("OVERPASS_ENDPOINT", "https://overpass-api.de/api/interpreter")}\"")
     }
 
+    val releaseStoreFile = localOrEnv("RELEASE_STORE_FILE")
+    val releaseStorePassword = localOrEnv("RELEASE_STORE_PASSWORD")
+    val releaseKeyAlias = localOrEnv("RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = localOrEnv("RELEASE_KEY_PASSWORD")
+    val hasReleaseSigning = releaseStoreFile.isNotBlank() &&
+        releaseStorePassword.isNotBlank() &&
+        releaseKeyAlias.isNotBlank() &&
+        releaseKeyPassword.isNotBlank()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(releaseStoreFile)
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 

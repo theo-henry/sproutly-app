@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     name: Build unsigned IPA
-    runs-on: macos-15
+    runs-on: macos-14
     timeout-minutes: 25
 
     defaults:
@@ -23,7 +23,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app || sudo xcode-select -s "$(ls -d /Applications/Xcode_16*.app | head -n1)"
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app
+
+      - name: Show available simulators
+        run: xcrun simctl list runtimes
 
       - name: Install XcodeGen
         run: brew install xcodegen

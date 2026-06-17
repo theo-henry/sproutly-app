@@ -714,32 +714,6 @@
         line-height: 1.45;
       }
 
-      .toast {
-        position: fixed;
-        z-index: 20;
-        right: 22px;
-        bottom: 22px;
-        max-width: min(320px, calc(100% - 44px));
-        border: 1px solid rgba(124, 231, 178, 0.22);
-        border-radius: 18px;
-        padding: 14px 16px;
-        background: rgba(6, 18, 13, 0.92);
-        color: var(--text-primary);
-        font-size: 14px;
-        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.35);
-        opacity: 0;
-        transform: translateY(18px);
-        transition:
-          opacity 240ms var(--ease-out),
-          transform 240ms var(--ease-out);
-        backdrop-filter: blur(18px);
-      }
-
-      .toast.is-visible {
-        opacity: 1;
-        transform: translateY(0);
-      }
-
       .reveal {
         opacity: 0;
         filter: blur(12px);
@@ -959,7 +933,8 @@
             <div class="store-actions reveal delay-3" aria-label="Download Sproutly">
               <a
                 class="store-button store-ios"
-                href="#"
+                href="app/Sproutly-unsigned.ipa"
+                download="Sproutly-unsigned.ipa"
                 data-download="iOS"
                 aria-label="Download Sproutly for iOS"
               >
@@ -979,7 +954,8 @@
               </a>
               <a
                 class="store-button store-android"
-                href="#"
+                href="app/app-release.apk"
+                download="app-release.apk"
                 data-download="Android"
                 aria-label="Download Sproutly for Android"
               >
@@ -1136,9 +1112,6 @@
         </div>
       </section>
     </main>
-
-    <div class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
-
     <script>
       const revealEls = document.querySelectorAll(".reveal");
       const observer = new IntersectionObserver(
@@ -1155,21 +1128,6 @@
 
       revealEls.forEach((el) => observer.observe(el));
 
-      const toast = document.querySelector(".toast");
-      let toastTimer;
-
-      document.querySelectorAll("[data-download]").forEach((button) => {
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          const platform = button.getAttribute("data-download");
-          toast.textContent = platform + " download placeholder. Add the file link here when ready.";
-          toast.classList.add("is-visible");
-          clearTimeout(toastTimer);
-          toastTimer = window.setTimeout(() => {
-            toast.classList.remove("is-visible");
-          }, 3000);
-        });
-      });
     </script>
   </body>
 </html>
